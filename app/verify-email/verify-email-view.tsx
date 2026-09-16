@@ -87,7 +87,7 @@ function AwaitingLink({ email }: { email: string | null }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <Button render={<Link href="/login" />} size="xl" className="w-full">
+        <Button render={<Link href="/login" />} nativeButton={false} size="xl" className="w-full">
           Go to sign in
         </Button>
 
@@ -123,7 +123,7 @@ function Outcome({ result, email }: { result: VerifyEmailResult; email: string |
       </div>
 
       <div className="flex flex-col gap-3">
-        <Button render={<Link href="/login" />} size="xl" className="w-full">
+        <Button render={<Link href="/login" />} nativeButton={false} size="xl" className="w-full">
           Go to sign in
         </Button>
 

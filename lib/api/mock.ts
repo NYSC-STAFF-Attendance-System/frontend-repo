@@ -38,8 +38,8 @@ import {
  *
  *   submit
  *     Walks today forward: first call signs in, second signs out, third
- *     reports already_complete. Survives a page load, so scanning the QR code
- *     continues the same day. Closing the tab starts over.
+ *     reports already_complete. Survives page loads and new tabs, so scanning
+ *     the QR code continues the same day. Sign out to reset the demo.
  *
  *   forcing any other outcome
  *     Add ?force= to the /scan URL to get a specific verdict back, for example
@@ -73,16 +73,16 @@ function forced<T extends { kind: string }>(
 }
 
 /**
- * Demo state, kept in sessionStorage rather than in module variables.
+ * Demo state, kept in localStorage.
  *
- * This matters more than it looks. Scanning the printed QR code is a fresh page
- * load, so anything held in memory is wiped between signing in on the app and
- * arriving on /scan - which would drop the staff member back at the login form
- * at exactly the moment a demo is meant to work.
+ * localStorage, not sessionStorage, and the reason is the whole point of the
+ * product: scanning the printed code opens the link in a NEW TAB. sessionStorage
+ * is scoped to one tab, so the session established at login would be invisible
+ * to the tab the camera opens, and the staff member would be bounced back to
+ * the login form at exactly the moment the demo is meant to work.
  *
- * sessionStorage, not localStorage: a demo should start clean in a new tab, and
- * nothing here should outlive the browser session. The real client will hold a
- * token from the backend and none of this survives.
+ * Cleared by logout. The real client will hold a token issued by the backend and
+ * none of this survives.
  */
 const SESSION_KEY = "nysc.mock.signedIn";
 const TODAY_KEY = "nysc.mock.today";
@@ -90,7 +90,7 @@ const TODAY_KEY = "nysc.mock.today";
 function readStore<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
-    const raw = window.sessionStorage.getItem(key);
+    const raw = window.localStorage.getItem(key);
     return raw === null ? fallback : (JSON.parse(raw) as T);
   } catch {
     // Private browsing and blocked site data both throw. The demo degrades to
@@ -102,7 +102,7 @@ function readStore<T>(key: string, fallback: T): T {
 function writeStore(key: string, value: unknown): void {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // Nothing to do; the value was unreachable anyway.
   }

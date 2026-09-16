@@ -21,11 +21,12 @@ export default function NotFound() {
       </div>
 
       <div className="flex w-full flex-col gap-3">
-        <Button render={<Link href="/home" />} size="xl" className="w-full">
+        <Button render={<Link href="/home" />} nativeButton={false} size="xl" className="w-full">
           Go to home
         </Button>
         <Button
           render={<Link href="/login" />}
+          nativeButton={false}
           variant="outline"
           size="lg"
           className="w-full"
