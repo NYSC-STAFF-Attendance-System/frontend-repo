@@ -35,6 +35,10 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-nysc: #148a47;
+  --color-nysc-dark: #0c6b36;
+  --color-nysc-muted: #e4f6ec;
+  --color-nysc-soft: #f3f7f4;
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
