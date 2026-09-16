@@ -89,6 +89,7 @@ export function OutcomePanel({
         {d.blockedReason ? (
           <Button
             render={<Link href={`/blocked?reason=${d.blockedReason}`} />}
+            nativeButton={false}
             variant="outline"
             size="lg"
             className="w-full"
@@ -99,6 +100,7 @@ export function OutcomePanel({
 
         <Button
           render={<Link href="/home" />}
+          nativeButton={false}
           variant={d.retryLabel ? "ghost" : "outline"}
           size="lg"
           className="w-full"

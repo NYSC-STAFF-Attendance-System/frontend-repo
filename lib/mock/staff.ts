@@ -6,7 +6,7 @@ import { mockDepartments, mockOffice } from "./office";
  * renders this person.
  */
 export const mockStaff: StaffProfile = {
-  staffId: "NYSC/FCT/0842",
+  staffId: "0842",
   fullName: "Chinedu Ibrahim",
   email: "c.ibrahim@nysc.gov.ng",
   rank: "Senior Officer II",

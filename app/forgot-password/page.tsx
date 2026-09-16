@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
           registered, we have sent a link for setting a new password. It expires
           after a short time.
         </p>
-        <Button render={<Link href="/login" />} size="xl" className="mt-8 w-full">
+        <Button render={<Link href="/login" />} nativeButton={false} size="xl" className="mt-8 w-full">
           Back to sign in
         </Button>
       </Screen>
