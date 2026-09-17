@@ -16,6 +16,9 @@ import type {
   TodayProgress,
 } from "@/types";
 import { OutcomePanel } from "./outcome-panel";
+import { api } from "@/lib/api";
+import { getDeviceId } from "@/lib/device";
+import { requestPosition } from "@/lib/geolocation";
 
 type ViewState =
   /** Reached from the nav tab rather than the printed code. */
