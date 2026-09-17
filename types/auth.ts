@@ -44,6 +44,23 @@ export type VerifyEmailResult =
   | { kind: "offline" }
   | { kind: "error"; message: string };
 
+/** Super admin invites an existing staff member to the admin dashboard. */
+export type InviteAdminResult =
+  | { kind: "sent"; email: string; inviteUrl: string }
+  | { kind: "not_staff" }
+  | { kind: "already_admin" }
+  | { kind: "forbidden" }
+  | { kind: "offline" }
+  | { kind: "error"; message: string };
+
+export type VerifyAdminInviteResult =
+  | { kind: "verified"; email: string }
+  | { kind: "invalid_token" }
+  | { kind: "expired_token" }
+  | { kind: "already_verified" }
+  | { kind: "offline" }
+  | { kind: "error"; message: string };
+
 /**
  * Requesting a reset link.
  *

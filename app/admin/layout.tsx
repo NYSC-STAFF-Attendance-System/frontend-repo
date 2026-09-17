@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 
+import { AdminGuard } from "@/components/auth-provider"
+import { LoadingState } from "@/components/states"
 import { AdminShell } from "./_components/admin-shell"
 
 export const metadata: Metadata = {
@@ -8,5 +11,17 @@ export const metadata: Metadata = {
 }
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
-  return <AdminShell>{children}</AdminShell>
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center bg-page">
+          <LoadingState label="Checking your account" />
+        </div>
+      }
+    >
+      <AdminGuard>
+        <AdminShell>{children}</AdminShell>
+      </AdminGuard>
+    </Suspense>
+  )
 }

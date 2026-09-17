@@ -16,7 +16,7 @@ export function Screen({
   className?: string;
 }) {
   return (
-    <main className={cn("mx-auto flex w-full max-w-[28rem] flex-1 flex-col px-4 py-6", className)}>
+    <main className={cn("mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-6", className)}>
       {children}
     </main>
   );

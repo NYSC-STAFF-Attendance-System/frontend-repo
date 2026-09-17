@@ -2,13 +2,9 @@
 
 import { MapPin, QrCode } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useScan } from "./use-scan";
 import { LoadingState } from "@/components/states";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
-import { getDeviceId } from "@/lib/device";
-import { requestPosition } from "@/lib/geolocation";
 import { assertNever } from "@/lib/utils";
 import type {
   AttendanceOutcome,
@@ -18,22 +14,6 @@ import type {
   TodayProgress,
 } from "@/types";
 import { OutcomePanel } from "./outcome-panel";
-
-type ViewState =
-  /** Reached from the nav tab rather than the printed code. */
-  | { name: "no_token" }
-  | { name: "resolving" }
-  | { name: "unresolved"; resolution: Exclude<ScanResolution, { kind: "resolved" }> }
-  | { name: "ready"; office: Office; progress: TodayProgress }
-  | { name: "locating"; office: Office; progress: TodayProgress }
-  | {
-      name: "location_failed";
-      office: Office;
-      progress: TodayProgress;
-      failure: LocationFailure;
-    }
-  | { name: "submitting"; office: Office }
-  | { name: "outcome"; office: Office; outcome: AttendanceOutcome };
 
 /**
  * /scan - the attendance screen.
@@ -52,80 +32,7 @@ type ViewState =
  * step 1, so nobody is ever asked for GPS they did not need to give.
  */
 export function ScanView() {
-  const token = useSearchParams().get("t");
-  const [state, setState] = useState<ViewState>(
-    token ? { name: "resolving" } : { name: "no_token" },
-  );
-
-  useEffect(() => {
-    if (!token) return;
-    let active = true;
-
-    // Both calls go out together. today() only decides the wording of the
-    // button, so it is not worth a second round trip after the token resolves.
-    Promise.all([api.attendance.resolveToken(token), api.attendance.today()]).then(
-      ([resolution, today]) => {
-        if (!active) return;
-
-        if (resolution.kind !== "resolved") {
-          setState({ name: "unresolved", resolution });
-          return;
-        }
-
-        const day = today.kind === "success" ? today.day : null;
-        const progress: TodayProgress = !day?.signInAt
-          ? "not_started"
-          : day.signOutAt
-            ? "complete"
-            : "signed_in";
-
-        setState({ name: "ready", office: resolution.office, progress });
-      },
-    );
-
-    return () => {
-      active = false;
-    };
-  }, [token]);
-
-  const record = useCallback(
-    async (office: Office, progress: TodayProgress) => {
-      if (!token) return;
-
-      setState({ name: "locating", office, progress });
-
-      const position = await requestPosition();
-      if (!position.ok) {
-        setState({ name: "location_failed", office, progress, failure: position.failure });
-        return;
-      }
-
-      const deviceId = getDeviceId();
-      if (!deviceId) {
-        setState({
-          name: "outcome",
-          office,
-          outcome: {
-            kind: "error",
-            message:
-              "This browser is blocking site data, so we cannot identify your phone.",
-          },
-        });
-        return;
-      }
-
-      setState({ name: "submitting", office });
-
-      const outcome = await api.attendance.submit({
-        token,
-        deviceId,
-        coordinates: position.coordinates,
-      });
-
-      setState({ name: "outcome", office, outcome });
-    },
-    [token],
-  );
+  const { state, record, retryOutcome } = useScan();
 
   switch (state.name) {
     case "no_token":
@@ -164,9 +71,7 @@ export function ScanView() {
       return (
         <OutcomePanel
           outcome={state.outcome}
-          onRetry={() =>
-            setState({ name: "ready", office: state.office, progress: "not_started" })
-          }
+          onRetry={retryOutcome}
         />
       );
 

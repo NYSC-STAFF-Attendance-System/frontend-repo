@@ -7,6 +7,7 @@ import {
   Clock,
   FileText,
   LayoutDashboard,
+  Logs,
   Settings,
   Users,
   X,
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/admin/attendance", label: "Attendance", icon: ClipboardList },
   { href: "/admin/reports", label: "Reports", icon: FileText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/audit-log", label: "Audit Log", icon: Logs },
 ];
 
 export function Sidebar({
@@ -46,7 +48,7 @@ export function Sidebar({
       />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-dvh w-[240px] shrink-0 flex-col bg-white px-4 py-5 transition-transform lg:static lg:h-full lg:translate-x-0 border-r border-[#BDCABE]",
+          "fixed inset-y-0 left-0 z-50 flex h-dvh w-60 shrink-0 flex-col border-r border-line bg-white px-4 py-5 transition-transform print:hidden lg:static lg:h-full lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -82,7 +84,7 @@ export function Sidebar({
                     : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800",
                 )}
               >
-                <Icon className="size-[18px]" strokeWidth={1.9} />
+                <Icon className="size-4.5" strokeWidth={1.9} />
                 {item.label}
               </Link>
             );

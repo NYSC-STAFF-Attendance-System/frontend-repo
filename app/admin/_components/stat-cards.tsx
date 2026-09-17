@@ -17,61 +17,61 @@ const cards = [
     value: "254",
     hint: "Active registered",
     icon: UserPlus,
-    iconClass: "bg-emerald-50 text-nysc",
-    valueClass: "text-zinc-900",
+    iconClass: "bg-mint text-nysc-green",
+    valueClass: "text-ink",
   },
   {
     label: "Present",
     value: "198",
     hint: (
-      <span className="flex items-center gap-1 text-nysc">
+      <span className="flex items-center gap-1 text-nysc-green">
         <TrendingUp className="size-3.5" /> 78% on-time
       </span>
     ),
     icon: CheckCircle2,
-    iconClass: "bg-emerald-50 text-nysc",
-    valueClass: "text-nysc",
+    iconClass: "bg-mint text-nysc-green",
+    valueClass: "text-nysc-green",
   },
   {
     label: "Late Arrivals",
     value: "14",
     hint: "Past 08:15 cutoff",
     icon: Clock,
-    iconClass: "bg-orange-50 text-orange-500",
-    valueClass: "text-orange-500",
+    iconClass: "bg-danger-wash text-danger-muted",
+    valueClass: "text-danger-muted",
   },
   {
     label: "Absent",
     value: "18",
     hint: (
       <span>
-        Unexcused: <span className="font-medium text-red-500">11</span>
+        Unexcused: <span className="font-medium text-danger">11</span>
       </span>
     ),
     icon: UserX,
-    iconClass: "bg-red-50 text-red-500",
-    valueClass: "text-red-500",
+    iconClass: "bg-danger-soft text-danger",
+    valueClass: "text-danger",
   },
   {
     label: "Checked Out",
     value: "142",
     hint: "Departure logs",
     icon: LogOut,
-    iconClass: "bg-zinc-100 text-zinc-500",
-    valueClass: "text-zinc-900",
+    iconClass: "bg-surface-50 text-slate",
+    valueClass: "text-ink",
   },
   {
     label: "Approvals",
     value: "12",
     hint: (
-      <span className="inline-flex items-center gap-1 font-medium text-nysc">
+      <span className="inline-flex items-center gap-1 font-medium text-nysc-green">
         Review requests
         <ArrowUpRight className="size-3.5" />
       </span>
     ),
     icon: BadgeCheck,
-    iconClass: "bg-emerald-50 text-nysc",
-    valueClass: "text-nysc",
+    iconClass: "bg-mint text-nysc-green",
+    valueClass: "text-nysc-green",
   },
 ]
 
@@ -83,10 +83,10 @@ export function StatCards() {
         return (
           <article
             key={card.label}
-            className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
+            className="rounded-2xl border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
           >
             <div className="mb-4 flex items-start justify-between gap-2">
-              <p className="text-[11px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
+              <p className="text-[11px] font-semibold tracking-[0.08em] text-olive-muted uppercase">
                 {card.label}
               </p>
               <span
@@ -106,7 +106,7 @@ export function StatCards() {
             >
               {card.value}
             </p>
-            <div className="mt-2 text-xs text-zinc-400">{card.hint}</div>
+            <div className="mt-2 text-xs text-slate">{card.hint}</div>
           </article>
         )
       })}

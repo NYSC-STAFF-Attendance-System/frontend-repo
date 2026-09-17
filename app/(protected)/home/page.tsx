@@ -2,89 +2,16 @@
 
 import { ArrowRight, Clock, MapPin, QrCode } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { useStaff } from "@/components/auth-provider";
+import { progressOf, useHome } from "./use-home";
 import { Screen } from "@/components/screen";
 import { ErrorState, LoadingState } from "@/components/states";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
 import { formatDayLabel, timeFromIso } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { AttendanceDay, TodayProgress, TodayResult } from "@/types";
+import type { AttendanceDay } from "@/types";
 
-type State =
-  | { name: "loading" }
-  | { name: "error"; message: string }
-  | { name: "ready"; date: string; day: AttendanceDay | null };
-
-function toState(result: TodayResult): State {
-  if (result.kind === "success") {
-    return { name: "ready", date: result.date, day: result.day };
-  }
-  return {
-    name: "error",
-    message:
-      result.kind === "offline"
-        ? "You appear to be offline. Your attendance is still safe on the server."
-        : result.message,
-  };
-}
-
-/**
- * Works out where the staff member is in their day from the two timestamps.
- *
- * Note this reads signInAt and signOutAt rather than day.status. status is the
- * backend judgement used for reporting - present, late, absent - and answers a
- * different question from "which button should this screen show".
- */
-function progressOf(day: AttendanceDay | null): TodayProgress {
-  if (!day?.signInAt) return "not_started";
-  if (!day.signOutAt) return "signed_in";
-  return "complete";
-}
-
-/**
- * /home - today at a glance.
- *
- * The main action sits within the fold at 375px, which is why this screen
- * carries no statistics and no history preview. Those live on /history.
- */
 export default function HomePage() {
-  const staff = useStaff();
-  const [state, setState] = useState<State>({ name: "loading" });
-
-  /**
-   * Fetches today and returns a cleanup function that ignores a late response.
-   *
-   * Shaped this way so the effect and the retry button run exactly the same
-   * code. When they were written separately, the retry path lost the real error
-   * message and reported a generic one instead.
-   *
-   * It does not set the loading state itself: doing that synchronously inside
-   * an effect forces an immediate second render. State already starts as
-   * loading, and retry is an event handler, which can set it freely.
-   */
-  const fetchToday = useCallback(() => {
-    let active = true;
-
-    api.attendance.today().then((result) => {
-      if (!active) return;
-      setState(toState(result));
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => fetchToday(), [fetchToday]);
-
-  function retry() {
-    setState({ name: "loading" });
-    fetchToday();
-  }
-
-  const firstName = staff.fullName.split(" ")[0];
+  const { staff, firstName, state, retry } = useHome();
 
   return (
     <Screen className="gap-5">
@@ -104,7 +31,9 @@ export default function HomePage() {
         <ErrorState message={state.message} onRetry={retry} />
       ) : null}
 
-      {state.name === "ready" ? <Today date={state.date} day={state.day} /> : null}
+      {state.name === "ready" ? (
+        <Today date={state.date} day={state.day} />
+      ) : null}
     </Screen>
   );
 }
@@ -156,7 +85,11 @@ function Today({ date, day }: { date: string; day: AttendanceDay | null }) {
                     : "bg-muted-foreground/60",
               )}
             />
-            {progress === "not_started" ? "Not started" : progress === "signed_in" ? "Active" : "Done"}
+            {progress === "not_started"
+              ? "Not started"
+              : progress === "signed_in"
+                ? "Active"
+                : "Done"}
           </span>
         </div>
 
@@ -167,8 +100,14 @@ function Today({ date, day }: { date: string; day: AttendanceDay | null }) {
         {/* Both slots always render, with a dash when empty, so the card keeps
             one height through the day instead of growing under the button. */}
         <dl className="mt-5 grid grid-cols-2 gap-3">
-          <TimeSlot label="Sign in" value={day?.signInAt ? timeFromIso(day.signInAt) : null} />
-          <TimeSlot label="Sign out" value={day?.signOutAt ? timeFromIso(day.signOutAt) : null} />
+          <TimeSlot
+            label="Sign in"
+            value={day?.signInAt ? timeFromIso(day.signInAt) : null}
+          />
+          <TimeSlot
+            label="Sign out"
+            value={day?.signOutAt ? timeFromIso(day.signOutAt) : null}
+          />
         </dl>
       </section>
 
@@ -181,7 +120,9 @@ function Today({ date, day }: { date: string; day: AttendanceDay | null }) {
         <>
           <Button render={<Link href="/scan" />} size="xl" className="w-full">
             <QrCode aria-hidden="true" />
-            {progress === "not_started" ? "Scan to sign in" : "Scan to sign out"}
+            {progress === "not_started"
+              ? "Scan to sign in"
+              : "Scan to sign out"}
             <ArrowRight aria-hidden="true" data-icon="inline-end" />
           </Button>
           <p className="text-center text-sm text-muted-foreground">
@@ -204,7 +145,7 @@ function TimeSlot({ label, value }: { label: string; value: string | null }) {
           value ? "text-foreground" : "text-muted-foreground/50",
         )}
       >
-        {value ?? "--:--"}
+        {value ?? "-- : --"}
       </dd>
     </div>
   );

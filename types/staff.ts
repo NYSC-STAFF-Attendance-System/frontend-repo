@@ -7,6 +7,12 @@ import type { Department } from "./department";
 export type AccountStatus = "active" | "banned";
 
 /**
+ * staff — attendance app only. admin — invited by a super admin and verified.
+ * super_admin — can send those invites.
+ */
+export type StaffRole = "staff" | "admin" | "super_admin";
+
+/**
  * A staff member's own record, returned after they authenticate.
  * Used on /home, /profile, /history and the final step of /register.
  */
@@ -21,6 +27,7 @@ export type StaffProfile = {
     name: string;
   };
   accountStatus: AccountStatus;
+  role: StaffRole;
   emailVerified: boolean;
   /**
    * ISO timestamp from the server, or null if no phone is bound yet.
