@@ -39,11 +39,12 @@ export default function EntryPage() {
       </ul>
 
       <div className="flex flex-col gap-3">
-        <Button render={<Link href="/login" />} size="xl" className="w-full">
+        <Button render={<Link href="/login" />} nativeButton={false} size="xl" className="w-full">
           Sign in
         </Button>
         <Button
           render={<Link href="/register" />}
+          nativeButton={false}
           variant="outline"
           size="lg"
           className="w-full"

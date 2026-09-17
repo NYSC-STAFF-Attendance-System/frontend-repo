@@ -24,7 +24,7 @@ export function ResetPasswordView() {
             Open the link directly from your email, or request a new one.
           </p>
         </div>
-        <Button render={<Link href="/forgot-password" />} size="xl" className="w-full">
+        <Button render={<Link href="/forgot-password" />} nativeButton={false} size="xl" className="w-full">
           Request a new link
         </Button>
       </div>
@@ -56,7 +56,7 @@ function ResetPasswordForm({ token }: { token: string }) {
             Sign in with your new password on your registered phone.
           </p>
         </div>
-        <Button render={<Link href="/login" />} size="xl" className="w-full">
+        <Button render={<Link href="/login" />} nativeButton={false} size="xl" className="w-full">
           Go to sign in
         </Button>
       </div>

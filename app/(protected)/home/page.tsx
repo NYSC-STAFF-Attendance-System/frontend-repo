@@ -118,7 +118,7 @@ function Today({ date, day }: { date: string; day: AttendanceDay | null }) {
         </p>
       ) : (
         <>
-          <Button render={<Link href="/scan" />} size="xl" className="w-full">
+          <Button render={<Link href="/scan" />} nativeButton={false} size="xl" className="w-full">
             <QrCode aria-hidden="true" />
             {progress === "not_started"
               ? "Scan to sign in"

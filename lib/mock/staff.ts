@@ -15,7 +15,7 @@ export const MOCK_ADMIN_INVITE_TOKEN = "admin_invite_ok";
  * /admin is 404 for this account until a super-admin invite is verified.
  */
 export const mockStaff: StaffProfile = {
-  staffId: "NYSC/FCT/0842",
+  staffId: "0842",
   fullName: "Chinedu Ibrahim",
   email: "c.ibrahim@nysc.gov.ng",
   rank: "Senior Officer II",

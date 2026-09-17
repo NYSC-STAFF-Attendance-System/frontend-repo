@@ -55,6 +55,7 @@ export default function ProfilePage() {
       <div className="flex flex-col gap-3">
         <Button
           render={<Link href="/profile/password" />}
+          nativeButton={false}
           variant="outline"
           size="lg"
           className="w-full"

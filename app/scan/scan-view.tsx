@@ -1,8 +1,10 @@
 "use client";
 
-import { MapPin, QrCode } from "lucide-react";
+import { Camera, MapPin, QrCode } from "lucide-react";
 import Link from "next/link";
-import { useScan } from "./use-scan";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { QrScanner } from "@/components/qr-scanner";
 import { LoadingState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { assertNever } from "@/lib/utils";
@@ -14,6 +16,29 @@ import type {
   TodayProgress,
 } from "@/types";
 import { OutcomePanel } from "./outcome-panel";
+
+type ViewState =
+  /** Reached from the nav tab rather than the printed code. */
+  | { name: "no_token" }
+  /** The in-app camera is open, looking for a code. */
+  | { name: "scanning" }
+  /** Something decoded, but it was not one of our office codes. */
+  | { name: "wrong_code" }
+  | { name: "resolving" }
+  | {
+      name: "unresolved";
+      resolution: Exclude<ScanResolution, { kind: "resolved" }>;
+    }
+  | { name: "ready"; office: Office; progress: TodayProgress }
+  | { name: "locating"; office: Office; progress: TodayProgress }
+  | {
+      name: "location_failed";
+      office: Office;
+      progress: TodayProgress;
+      failure: LocationFailure;
+    }
+  | { name: "submitting"; office: Office }
+  | { name: "outcome"; office: Office; outcome: AttendanceOutcome };
 
 /**
  * /scan - the attendance screen.
@@ -32,11 +57,128 @@ import { OutcomePanel } from "./outcome-panel";
  * step 1, so nobody is ever asked for GPS they did not need to give.
  */
 export function ScanView() {
-  const { state, record, retryOutcome } = useScan();
+  const router = useRouter();
+  const token = useSearchParams().get("t");
+  const [state, setState] = useState<ViewState>(
+    token ? { name: "resolving" } : { name: "no_token" },
+  );
+
+  /**
+   * Handles whatever the in-app camera decoded.
+   *
+   * Rather than resolving the token here, it navigates to the same URL the
+   * printed code would have opened. Both routes into this screen then run the
+   * identical path, so there is one flow to reason about and not two.
+   *
+   * useCallback matters: the scanner restarts the camera whenever this function
+   * changes identity, so an inline arrow would reopen the camera every render.
+   */
+  const handleScanResult = useCallback(
+    (text: string) => {
+      const scanned = tokenFromScan(text);
+      if (!scanned) {
+        setState({ name: "wrong_code" });
+        return;
+      }
+      router.replace(`/scan?t=${encodeURIComponent(scanned)}`);
+    },
+    [router],
+  );
+
+  const cancelScanning = useCallback(() => setState({ name: "no_token" }), []);
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+
+    // Both calls go out together. today() only decides the wording of the
+    // button, so it is not worth a second round trip after the token resolves.
+    Promise.all([
+      api.attendance.resolveToken(token),
+      api.attendance.today(),
+    ]).then(([resolution, today]) => {
+      if (!active) return;
+
+      if (resolution.kind !== "resolved") {
+        setState({ name: "unresolved", resolution });
+        return;
+      }
+
+      const day = today.kind === "success" ? today.day : null;
+      const progress: TodayProgress = !day?.signInAt
+        ? "not_started"
+        : day.signOutAt
+          ? "complete"
+          : "signed_in";
+
+      setState({ name: "ready", office: resolution.office, progress });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  const record = useCallback(
+    async (office: Office, progress: TodayProgress) => {
+      if (!token) return;
+
+      setState({ name: "locating", office, progress });
+
+      const position = await requestPosition();
+      if (!position.ok) {
+        setState({
+          name: "location_failed",
+          office,
+          progress,
+          failure: position.failure,
+        });
+        return;
+      }
+
+      const deviceId = getDeviceId();
+      if (!deviceId) {
+        setState({
+          name: "outcome",
+          office,
+          outcome: {
+            kind: "error",
+            message:
+              "This browser is blocking site data, so we cannot identify your phone.",
+          },
+        });
+        return;
+      }
+
+      setState({ name: "submitting", office });
+
+      const outcome = await api.attendance.submit({
+        token,
+        deviceId,
+        coordinates: position.coordinates,
+      });
+
+      setState({ name: "outcome", office, outcome });
+    },
+    [token],
+  );
 
   switch (state.name) {
     case "no_token":
-      return <NoToken />;
+      return <NoToken onOpenCamera={() => setState({ name: "scanning" })} />;
+
+    case "scanning":
+      return (
+        <QrScanner onResult={handleScanResult} onCancel={cancelScanning} />
+      );
+
+    case "wrong_code":
+      return (
+        <WrongCode
+          onRetry={() => setState({ name: "scanning" })}
+          onCancel={cancelScanning}
+        />
+      );
 
     case "resolving":
       return <LoadingState label="Checking the office code" />;
@@ -68,32 +210,101 @@ export function ScanView() {
       );
 
     case "outcome":
-      return (
-        <OutcomePanel
-          outcome={state.outcome}
-          onRetry={retryOutcome}
-        />
-      );
+      return <OutcomePanel outcome={state.outcome} onRetry={retryOutcome} />;
 
     default:
       return assertNever(state);
   }
 }
 
-function NoToken() {
+/**
+ * Pulls the office token out of whatever the camera decoded.
+ *
+ * Accepts the full URL the printed code actually holds, and also a bare token,
+ * in case a code is ever printed without the surrounding address. Anything else
+ * - a website, a payment code, someone else's QR - returns null and is reported
+ * rather than sent to the backend.
+ */
+function tokenFromScan(text: string): string | null {
+  const trimmed = text.trim();
+
+  try {
+    return new URL(trimmed).searchParams.get("t");
+  } catch {
+    // Not a URL. Accept it as a token only if it looks like one.
+    return /^[A-Za-z0-9_-]{6,}$/.test(trimmed) ? trimmed : null;
+  }
+}
+
+function NoToken({ onOpenCamera }: { onOpenCamera: () => void }) {
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+        <QrCode aria-hidden="true" className="size-10 text-muted-foreground" />
+        <div className="flex flex-col gap-2">
+          <h1 className="text-xl font-semibold text-foreground">
+            Scan the office code
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Point your camera at the attendance code displayed at your office.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-auto flex flex-col gap-3 pt-8">
+        <Button size="xl" onClick={onOpenCamera} className="w-full">
+          <Camera aria-hidden="true" />
+          Open camera
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          You can also use your phone camera app. It opens this page directly.
+        </p>
+        <Button
+          render={<Link href="/home" />}
+          nativeButton={false}
+          variant="ghost"
+          size="lg"
+          className="w-full"
+        >
+          Back to home
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function WrongCode({
+  onRetry,
+  onCancel,
+}: {
+  onRetry: () => void;
+  onCancel: () => void;
+}) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-      <QrCode aria-hidden="true" className="size-10 text-muted-foreground" />
+      <QrCode aria-hidden="true" className="size-10 text-destructive" />
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold text-foreground">Scan the office code</h1>
+        <h1 className="text-xl font-semibold text-foreground">
+          That is not an office code
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Open your phone camera and point it at the attendance code printed at
-          your office. It will bring you straight back here.
+          The code scanned, but it is not an NYSC attendance code. Check you are
+          pointing at the right poster.
         </p>
       </div>
-      <Button render={<Link href="/home" />} variant="outline" size="lg" className="mt-2 w-full">
-        Back to home
-      </Button>
+      <div className="mt-2 flex w-full flex-col gap-2">
+        <Button size="xl" onClick={onRetry} className="w-full">
+          Scan again
+        </Button>
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={onCancel}
+          className="w-full"
+        >
+          Go back
+        </Button>
+      </div>
     </div>
   );
 }
@@ -113,7 +324,9 @@ function Ready({
     <div className="flex flex-1 flex-col">
       <header className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">You are scanning</p>
-        <h1 className="text-2xl font-semibold text-foreground">{office.name}</h1>
+        <h1 className="text-2xl font-semibold text-foreground">
+          {office.name}
+        </h1>
         <p className="text-sm text-muted-foreground">{office.state}</p>
       </header>
 
@@ -134,7 +347,12 @@ function Ready({
           without a fixed position that would cover content. */}
       <div className="mt-auto flex flex-col gap-3 pt-8">
         {complete ? (
-          <Button render={<Link href="/home" />} size="xl" className="w-full">
+          <Button
+            render={<Link href="/home" />}
+            nativeButton={false}
+            size="xl"
+            className="w-full"
+          >
             Back to home
           </Button>
         ) : (
@@ -142,7 +360,13 @@ function Ready({
             <Button size="xl" onClick={onRecord} className="w-full">
               {progress === "signed_in" ? "Sign out" : "Sign in"}
             </Button>
-            <Button render={<Link href="/home" />} variant="ghost" size="lg" className="w-full">
+            <Button
+              render={<Link href="/home" />}
+              nativeButton={false}
+              variant="ghost"
+              size="lg"
+              className="w-full"
+            >
               Cancel
             </Button>
           </>
@@ -166,14 +390,22 @@ function Unresolved({
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
         <p className="text-sm text-muted-foreground">{message}</p>
       </div>
-      <Button render={<Link href="/home" />} variant="outline" size="lg" className="mt-2 w-full">
+      <Button
+        render={<Link href="/home" />}
+        nativeButton={false}
+        variant="outline"
+        size="lg"
+        className="mt-2 w-full"
+      >
         Back to home
       </Button>
     </div>
   );
 }
 
-function describeResolution(resolution: Exclude<ScanResolution, { kind: "resolved" }>): {
+function describeResolution(
+  resolution: Exclude<ScanResolution, { kind: "resolved" }>,
+): {
   title: string;
   message: string;
 } {
@@ -194,7 +426,8 @@ function describeResolution(resolution: Exclude<ScanResolution, { kind: "resolve
     case "offline":
       return {
         title: "You are offline",
-        message: "We could not check the office code. Reconnect and scan again.",
+        message:
+          "We could not check the office code. Reconnect and scan again.",
       };
     case "error":
       return { title: "Something went wrong", message: resolution.message };
@@ -225,7 +458,13 @@ function LocationFailed({
             Try again
           </Button>
         ) : null}
-        <Button render={<Link href="/home" />} variant="outline" size="lg" className="w-full">
+        <Button
+          render={<Link href="/home" />}
+          nativeButton={false}
+          variant="outline"
+          size="lg"
+          className="w-full"
+        >
           Back to home
         </Button>
       </div>

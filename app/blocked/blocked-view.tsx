@@ -42,6 +42,7 @@ export function BlockedView() {
 
       <Button
         render={<Link href="/login" />}
+        nativeButton={false}
         variant="outline"
         size="lg"
         className="w-full"
