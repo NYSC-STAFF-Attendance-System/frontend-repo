@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useForgotPassword } from "./use-forgot-password";
 import { Field } from "@/components/field";
 import { Screen } from "@/components/screen";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
-import { assertNever } from "@/lib/utils";
-import type { PasswordResetRequestResult } from "@/types";
 
 /**
  * /forgot-password
@@ -16,32 +13,8 @@ import type { PasswordResetRequestResult } from "@/types";
  * where useSearchParams is called.
  */
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [fieldError, setFieldError] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFormError(null);
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setFieldError("Enter a valid email address.");
-      return;
-    }
-    setFieldError(null);
-
-    setSubmitting(true);
-    const result = await api.password.requestReset(email.trim());
-    setSubmitting(false);
-
-    if (result.kind === "sent") {
-      setSent(true);
-      return;
-    }
-    setFormError(messageFor(result));
-  }
+  const { email, setEmail, submitting, fieldError, formError, sent, submit } =
+    useForgotPassword();
 
   if (sent) {
     return (
@@ -71,7 +44,7 @@ export default function ForgotPasswordPage() {
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+      <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <Field
           label="Email address"
           name="email"
@@ -108,19 +81,4 @@ export default function ForgotPasswordPage() {
       </p>
     </Screen>
   );
-}
-
-function messageFor(result: Exclude<PasswordResetRequestResult, { kind: "sent" }>): string {
-  switch (result.kind) {
-    case "rate_limited":
-      return result.retryAfterSeconds
-        ? `Too many requests. Try again in ${result.retryAfterSeconds} seconds.`
-        : "Too many requests. Try again shortly.";
-    case "offline":
-      return "You appear to be offline. Check your connection and try again.";
-    case "error":
-      return result.message;
-    default:
-      return assertNever(result);
-  }
 }

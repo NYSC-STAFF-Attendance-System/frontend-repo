@@ -2,63 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useChangePassword } from "./use-change-password";
 import { Field } from "@/components/field";
 import { Screen } from "@/components/screen";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
-import { assertNever } from "@/lib/utils";
-import type { ChangePasswordResult } from "@/types";
-
-type Errors = Partial<Record<"current" | "next" | "confirm", string>>;
 
 /** /profile/password - change password while signed in. */
 export default function ChangePasswordPage() {
   const router = useRouter();
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Errors>({});
-  const [formError, setFormError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFormError(null);
-
-    const found: Errors = {};
-    if (!current) found.current = "Enter your current password.";
-    if (next.length < 8) found.next = "Use at least 8 characters.";
-    // Caught here rather than by the server: reusing the same password is not a
-    // failure the backend needs to hear about.
-    if (next && next === current) found.next = "Choose a password you have not used here before.";
-    if (confirm !== next) found.confirm = "Both passwords must match.";
-
-    setErrors(found);
-    if (Object.keys(found).length > 0) return;
-
-    setSubmitting(true);
-    const result = await api.password.change({
-      currentPassword: current,
-      newPassword: next,
-    });
-    setSubmitting(false);
-
-    if (result.kind === "success") {
-      setDone(true);
-      return;
-    }
-    if (result.kind === "wrong_current_password") {
-      setErrors({ current: "That is not your current password." });
-      return;
-    }
-    if (result.kind === "weak_password") {
-      setErrors({ next: result.message });
-      return;
-    }
-    setFormError(messageFor(result));
-  }
+  const {
+    current,
+    setCurrent,
+    next,
+    setNext,
+    confirm,
+    setConfirm,
+    submitting,
+    errors,
+    formError,
+    done,
+    submit,
+  } = useChangePassword();
 
   if (done) {
     return (
@@ -81,7 +45,7 @@ export default function ChangePasswordPage() {
         <h1 className="text-2xl font-semibold text-foreground">Change password</h1>
       </header>
 
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+      <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <Field
           label="Current password"
           name="current"
@@ -138,20 +102,4 @@ export default function ChangePasswordPage() {
       </Link>
     </Screen>
   );
-}
-
-function messageFor(
-  result: Exclude<
-    ChangePasswordResult,
-    { kind: "success" } | { kind: "wrong_current_password" } | { kind: "weak_password" }
-  >,
-): string {
-  switch (result.kind) {
-    case "offline":
-      return "You appear to be offline. Check your connection and try again.";
-    case "error":
-      return result.message;
-    default:
-      return assertNever(result);
-  }
 }

@@ -38,6 +38,34 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-ink: #191c1e;
+  --color-ink-secondary: #2e3132;
+  --color-olive: #3e4a41;
+  --color-olive-muted: #6e7a70;
+  --color-nysc: #188c44;
+  --color-nysc-dark: #006b3f;
+  --color-nysc-mid: #1e7048;
+  --color-nysc-green: #008751;
+  --color-nysc-muted: color-mix(in srgb, #188c44 14%, #ffffff);
+  --color-nysc-soft: #fdfff9;
+  --color-mint: #a1f1bf;
+  --color-slate: #6b7280;
+  --color-danger: #ba1a1a;
+  --color-danger-muted: #9d3d43;
+  --color-danger-rose: #bd555a;
+  --color-danger-strong: #93000a;
+  --color-danger-dark: #80272e;
+  --color-danger-deep: #40000a;
+  --color-danger-wash: #ffdad6;
+  --color-danger-soft: #ffdad9;
+  --color-page: #f8f9fb;
+  --color-cream: #fdfff9;
+  --color-line: #bdcabe;
+  --color-surface-50: #f3f4f6;
+  --color-surface-100: #f0f1f3;
+  --color-surface-200: #edeef0;
+  --color-surface-300: #e1e2e4;
+  --color-surface-400: #d9dadc;
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -49,6 +77,8 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --animate-search-scan: nysc-search-scan 2.8s ease-in-out infinite;
+  --animate-caret: nysc-caret 1.05s steps(1) infinite;
 }
 
 :root {
@@ -59,35 +89,35 @@
   /* Native checkboxes, radios and range inputs ignore the palette and paint
      themselves browser-blue. This is the only way to bring them in. */
   accent-color: var(--primary);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --background: #ffffff;
+  --foreground: #191c1e;
+  --card: #ffffff;
+  --card-foreground: #191c1e;
+  --popover: #ffffff;
+  --popover-foreground: #191c1e;
   /* NYSC green. Every button, link and focus ring reads from this one line. */
-  --primary: oklch(0.45 0.13 158);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --primary: #188c44;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f1f3;
+  --secondary-foreground: #191c1e;
+  --muted: #f3f4f6;
+  --muted-foreground: #6e7a70;
+  --accent: #f3f4f6;
+  --accent-foreground: #191c1e;
+  --destructive: #ba1a1a;
   /* Used for a confirmed Sign In or Sign Out. Kept separate from --primary so
      that changing the brand colour never changes what "it worked" looks like. */
-  --success: oklch(0.55 0.14 152);
-  --success-foreground: oklch(0.985 0 0);
+  --success: #008751;
+  --success-foreground: #ffffff;
   /* Late and Incomplete are neither a success nor a refusal. Giving them their
      own colour stops a late arrival reading like a rejected sign-in. */
-  --warning: oklch(0.62 0.15 65);
-  --warning-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --warning: #9d3d43;
+  --warning-foreground: #ffffff;
+  --border: #bdcabe;
+  --input: #e1e2e4;
   /* The outline around a focused field. Green so keyboard users get the same
      brand cue everyone else does. */
-  --ring: oklch(0.45 0.13 158);
+  --ring: #188c44;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -112,12 +142,40 @@
      covers what shows beyond it, which on iOS is the overscroll bounce area
      and on a short page is everything below the fold. */
   html {
-    background-color: var(--background);
+    background-color: var(--color-page);
     color: var(--foreground);
     @apply font-sans;
   }
   body {
-    background-color: var(--background);
+    background-color: var(--color-page);
     color: var(--foreground);
+  }
+}
+
+@keyframes nysc-search-scan {
+  0% {
+    transform: translateX(-40%);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(340%);
+    opacity: 0;
+  }
+}
+
+@keyframes nysc-caret {
+  0%,
+  46% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
   }
 }
