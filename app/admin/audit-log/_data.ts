@@ -150,7 +150,7 @@ function generatedEvents(): AuditEvent[] {
   return Array.from({ length: 475 }, (_, index) => {
     const person = extraUsers[index % extraUsers.length]
     const action = generatedActions[index % generatedActions.length]
-    const module: AuditModule =
+    const eventModule: AuditModule =
       action === "Attendance Settings Changed"
         ? "Settings"
         : action === "Registration Approved" || action === "Staff Account Created"
@@ -180,15 +180,15 @@ function generatedEvents(): AuditEvent[] {
         role === "Administrator" ? "IB" : role === "System" ? "SY" : person.initials,
       role,
       action,
-      module,
+      module: eventModule,
       recordCode:
-        module === "Attendance"
+        eventModule === "Attendance"
           ? `ATT-20231024-${String(130 + (index % 80)).padStart(3, "0")}`
-          : module === "Staff"
+          : eventModule === "Staff"
             ? `REG-2023-${String(200 + (index % 40)).padStart(3, "0")}`
             : "CFG-SHIFT",
       recordDetail:
-        module === "Settings"
+        eventModule === "Settings"
           ? "Grace period updated"
           : person.name,
     }

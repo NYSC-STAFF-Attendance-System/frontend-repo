@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -211,38 +212,67 @@ function readIntent(needle: string): SearchIntent | null {
 
 type Recent = { title: string; href: string; kind: SearchKind };
 
+const EMPTY_RECENTS: Recent[] = [];
+const recentsListeners = new Set<() => void>();
+let recentsRaw: string | null = null;
+let recentsCache: Recent[] = EMPTY_RECENTS;
+
+function subscribeRecents(onStoreChange: () => void) {
+  recentsListeners.add(onStoreChange);
+  return () => {
+    recentsListeners.delete(onStoreChange);
+  };
+}
+
 function readRecents(): Recent[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_RECENTS;
   try {
     const raw = window.sessionStorage.getItem(RECENT_KEY);
-    return raw ? (JSON.parse(raw) as Recent[]) : [];
+    if (raw === recentsRaw) return recentsCache;
+    recentsRaw = raw;
+    recentsCache = raw ? (JSON.parse(raw) as Recent[]) : EMPTY_RECENTS;
+    return recentsCache;
   } catch {
-    return [];
+    return EMPTY_RECENTS;
   }
 }
 
 function writeRecents(items: Recent[]) {
+  const next = items.slice(0, 5);
   try {
-    window.sessionStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, 5)));
+    const raw = JSON.stringify(next);
+    window.sessionStorage.setItem(RECENT_KEY, raw);
+    recentsRaw = raw;
+    recentsCache = next;
   } catch {
-    // Private browsing can block this; recents just won't persist.
+    recentsRaw = null;
+    recentsCache = next;
   }
+  recentsListeners.forEach((listener) => listener());
+}
+
+function subscribeNever() {
+  return () => {};
+}
+
+function readModKey() {
+  return /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
 }
 
 export function useAdminSearch() {
   const router = useRouter();
   const pending = useAppSelector((state) => state.staffApprovals.queue);
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQueryState] = useState("");
   const [active, setActive] = useState(0);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [typedPlaceholder, setTypedPlaceholder] = useState(PLACEHOLDERS[0]);
-  const [recents, setRecents] = useState<Recent[]>([]);
-  const [modKey, setModKey] = useState("⌘");
+  const recents = useSyncExternalStore(subscribeRecents, readRecents, () => EMPTY_RECENTS);
+  const modKey = useSyncExternalStore(subscribeNever, readModKey, () => "⌘");
 
-  useEffect(() => {
-    setRecents(readRecents());
-    setModKey(/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl");
+  const setQuery = useCallback((value: string) => {
+    setQueryState(value);
+    setActive(0);
   }, []);
 
   useEffect(() => {
@@ -256,7 +286,6 @@ export function useAdminSearch() {
   useEffect(() => {
     if (open) return;
     const full = PLACEHOLDERS[placeholderIndex];
-    setTypedPlaceholder("");
     let i = 0;
     const id = window.setInterval(() => {
       i += 1;
@@ -270,7 +299,7 @@ export function useAdminSearch() {
     setOpen(false);
     setQuery("");
     setActive(0);
-  }, []);
+  }, [setQuery]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -287,7 +316,7 @@ export function useAdminSearch() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [setQuery]);
 
   const catalog = useMemo<SearchHit[]>(() => {
     const people: SearchHit[] = pending.map((staff) => ({
@@ -349,24 +378,16 @@ export function useAdminSearch() {
     return ranked.filter((row) => row.points >= best * 0.55).slice(0, 8);
   }, [catalog, intent, query]);
 
-  useEffect(() => {
-    setActive(0);
-  }, [query, open]);
-
   const go = useCallback(
     (hit: Pick<SearchHit, "title" | "href" | "kind">) => {
-      setRecents((current) => {
-        const next = [
-          { title: hit.title, href: hit.href, kind: hit.kind },
-          ...current.filter((item) => item.href !== hit.href),
-        ].slice(0, 5);
-        writeRecents(next);
-        return next;
-      });
+      writeRecents([
+        { title: hit.title, href: hit.href, kind: hit.kind },
+        ...recents.filter((item) => item.href !== hit.href),
+      ]);
       router.push(hit.href);
       close();
     },
-    [close, router],
+    [close, recents, router],
   );
 
   function onInputKey(event: ReactKeyboardEvent<HTMLInputElement>) {

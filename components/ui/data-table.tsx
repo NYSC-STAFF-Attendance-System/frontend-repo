@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -115,12 +115,13 @@ export function DataTable<T>({
   rowAriaLabel?: (row: T) => string
 }) {
   const [internalPage, setInternalPage] = useState(1)
+  const [pageResetKey, setPageResetKey] = useState(resetKey)
+  if (controlledPage == null && pageResetKey !== resetKey) {
+    setPageResetKey(resetKey)
+    setInternalPage(1)
+  }
   const page = controlledPage ?? internalPage
   const setPage = onPageChange ?? setInternalPage
-
-  useEffect(() => {
-    if (controlledPage == null) setInternalPage(1)
-  }, [controlledPage, resetKey])
 
   const slice = enablePagination
     ? paginate(data, page, pageSize)

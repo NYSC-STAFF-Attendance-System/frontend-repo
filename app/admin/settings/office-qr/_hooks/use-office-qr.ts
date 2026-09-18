@@ -1,7 +1,7 @@
 "use client";
 
 import QRCode from "qrcode";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useQueryFilters } from "@/hooks/use-query-filters";
 import { officeScanHref } from "@/lib/office-qr";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
@@ -13,29 +13,37 @@ import {
 
 const FILTERS = { view: "manage" };
 
+function subscribeNever() {
+  return () => {};
+}
+
+function readOrigin() {
+  return window.location.origin;
+}
+
 export function useOfficeQr() {
   const dispatch = useAppDispatch();
   const status = useAppSelector((state) => state.officeQr.status);
   const station = useAppSelector((state) => state.officeQr.station);
   const message = useAppSelector((state) => state.officeQr.message);
   const { filters, setFilters } = useQueryFilters(FILTERS);
+  const origin = useSyncExternalStore(subscribeNever, readOrigin, () => "");
 
   const [image, setImage] = useState<string | null>(null);
-  const [scanUrl, setScanUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const scanUrl = station && origin ? officeScanHref(origin, station.token) : "";
 
   useEffect(() => {
     void dispatch(hydrateOfficeQr());
   }, [dispatch]);
 
   useEffect(() => {
-    if (!station) return;
-    const url = officeScanHref(window.location.origin, station.token);
-    setScanUrl(url);
+    if (!scanUrl) return;
     let active = true;
-    QRCode.toDataURL(url, {
+    QRCode.toDataURL(scanUrl, {
       width: 880,
       margin: 1,
       errorCorrectionLevel: "H",
@@ -46,7 +54,7 @@ export function useOfficeQr() {
     return () => {
       active = false;
     };
-  }, [station]);
+  }, [scanUrl]);
 
   async function copyPayload() {
     if (!station) return;

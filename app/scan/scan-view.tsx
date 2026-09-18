@@ -40,8 +40,8 @@ type ViewState =
       progress: TodayProgress;
       failure: LocationFailure;
     }
-  | { name: "submitting"; office: Office }
-  | { name: "outcome"; office: Office; outcome: AttendanceOutcome };
+  | { name: "submitting"; office: Office; progress: TodayProgress }
+  | { name: "outcome"; office: Office; progress: TodayProgress; outcome: AttendanceOutcome };
 
 /**
  * /scan - the attendance screen.
@@ -144,6 +144,7 @@ export function ScanView() {
         setState({
           name: "outcome",
           office,
+          progress,
           outcome: {
             kind: "error",
             message:
@@ -153,7 +154,7 @@ export function ScanView() {
         return;
       }
 
-      setState({ name: "submitting", office });
+      setState({ name: "submitting", office, progress });
 
       const outcome = await api.attendance.submit({
         token,
@@ -161,7 +162,7 @@ export function ScanView() {
         coordinates: position.coordinates,
       });
 
-      setState({ name: "outcome", office, outcome });
+      setState({ name: "outcome", office, progress, outcome });
     },
     [token],
   );
@@ -213,7 +214,12 @@ export function ScanView() {
       );
 
     case "outcome":
-      return <OutcomePanel outcome={state.outcome} onRetry={retryOutcome} />;
+      return (
+        <OutcomePanel
+          outcome={state.outcome}
+          onRetry={() => record(state.office, state.progress)}
+        />
+      );
 
     default:
       return assertNever(state);

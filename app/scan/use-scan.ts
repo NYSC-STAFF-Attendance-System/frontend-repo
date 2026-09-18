@@ -25,8 +25,8 @@ export type ScanViewState =
       progress: TodayProgress;
       failure: LocationFailure;
     }
-  | { name: "submitting"; office: Office }
-  | { name: "outcome"; office: Office; outcome: AttendanceOutcome };
+  | { name: "submitting"; office: Office; progress: TodayProgress }
+  | { name: "outcome"; office: Office; progress: TodayProgress; outcome: AttendanceOutcome };
 
 export function useScan() {
   const token = useSearchParams().get("t");
@@ -74,6 +74,7 @@ export function useScan() {
         setState({
           name: "outcome",
           office,
+          progress,
           outcome: {
             kind: "error",
             message: "This browser is blocking site data, so we cannot identify your phone.",
@@ -81,20 +82,21 @@ export function useScan() {
         });
         return;
       }
-      setState({ name: "submitting", office });
+      setState({ name: "submitting", office, progress });
       const outcome = await api.attendance.submit({
         token,
         deviceId,
         coordinates: position.coordinates,
       });
-      setState({ name: "outcome", office, outcome });
+      setState({ name: "outcome", office, progress, outcome });
     },
     [token],
   );
 
-  return { state, record, retryOutcome: () => {
-    if (state.name === "outcome") {
-      setState({ name: "ready", office: state.office, progress: "not_started" });
-    }
-  } };
+  const retryOutcome = useCallback(() => {
+    if (state.name !== "outcome") return;
+    void record(state.office, state.progress);
+  }, [record, state]);
+
+  return { state, record, retryOutcome };
 }

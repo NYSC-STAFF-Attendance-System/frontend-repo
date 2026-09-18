@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import {
   ArrowRight,
   BadgeCheck,
@@ -17,7 +18,6 @@ import {
 
 import { FilterSelect } from "@/app/admin/_components/filter-select"
 import { Button } from "@/components/ui/button"
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { InviteAdminPanel } from "./invite-admin"
@@ -39,13 +39,15 @@ const avatarClass = {
 
 function ProfileAvatar({ staff }: { staff: ApprovalRequest }) {
   const [failed, setFailed] = useState(false)
-  const showPhoto = staff.avatar === "photo" && staff.photo && !failed
+  const photo = staff.photo
 
-  if (showPhoto) {
+  if (staff.avatar === "photo" && photo && !failed) {
     return (
-      <img
-        src={staff.photo}
+      <Image
+        src={photo}
         alt={staff.name}
+        width={40}
+        height={40}
         className="size-10 rounded-full object-cover"
         onError={() => setFailed(true)}
       />
@@ -84,97 +86,6 @@ export function StaffApprovals() {
     removeFromQueue,
     exportList,
   } = useStaffApprovals()
-
-  const columns: DataTableColumn<ApprovalRequest>[] = [
-    {
-      id: "profile",
-      header: "Profile",
-      cell: (staff) => <ProfileAvatar staff={staff} />,
-    },
-    {
-      id: "details",
-      header: "Staff Details",
-      cell: (staff) => (
-        <>
-          <p className="text-sm font-semibold text-ink">{staff.name}</p>
-          <p className="mt-0.5 text-xs text-olive-muted">{staff.staffId}</p>
-        </>
-      ),
-    },
-    {
-      id: "department",
-      header: "Department & Office",
-      cell: (staff) => (
-        <>
-          <p className="flex items-center gap-1.5 text-sm text-olive">
-            <span
-              className={cn(
-                "size-1.5 rounded-full",
-                departmentTone[staff.department]
-              )}
-            />
-            {staff.department}
-          </p>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-olive-muted">
-            <MapPin className="size-3" />
-            {staff.office}
-          </p>
-        </>
-      ),
-    },
-    {
-      id: "registered",
-      header: "Reg. Date",
-      className: "text-sm text-olive",
-      cell: (staff) => (
-        <>
-          <p>{staff.registeredOn}</p>
-          <p className="mt-0.5 text-xs text-olive-muted">{staff.registeredAt}</p>
-        </>
-      ),
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: () => (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-50 px-2.5 py-1 text-xs font-medium text-olive-muted">
-          <span className="size-1.5 rounded-full bg-danger-rose" />
-          Pending Review
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      headerClassName: "text-right",
-      className: "text-right",
-      cell: (staff) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-olive-muted hover:text-ink"
-            aria-label={`View ${staff.name}`}
-          >
-            <Eye className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-8 px-3 text-sm font-semibold text-danger hover:bg-danger-soft hover:text-danger"
-            onClick={() => removeFromQueue(staff.id, "reject")}
-          >
-            Reject
-          </Button>
-          <Button
-            className="h-8 rounded-lg bg-nysc px-3 text-sm text-white hover:bg-nysc/90"
-            onClick={() => removeFromQueue(staff.id, "approve")}
-          >
-            Approve
-          </Button>
-        </div>
-      ),
-    },
-  ]
 
   return (
     <div className="flex flex-col gap-6">

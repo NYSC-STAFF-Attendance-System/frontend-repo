@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -52,13 +53,14 @@ const avatarClass = {
 function ProfilePhoto({ record }: { record: AttendanceRecord }) {
   const [failed, setFailed] = useState(false);
   const photo = record.photo?.replace("w=96&h=96", "w=256&h=256");
-  const showPhoto = record.avatar === "photo" && photo && !failed;
 
-  if (showPhoto) {
+  if (record.avatar === "photo" && photo && !failed) {
     return (
-      <img
+      <Image
         src={photo}
         alt={record.name}
+        width={104}
+        height={104}
         className="size-26 rounded-full object-cover ring-4 ring-white shadow-[0_8px_24px_rgba(16,24,40,0.08)]"
         onError={() => setFailed(true)}
       />

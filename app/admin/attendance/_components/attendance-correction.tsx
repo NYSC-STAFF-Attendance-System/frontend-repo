@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useAttendanceCorrection } from "../_hooks/use-attendance-correction";
 import Link from "next/link";
 import {
@@ -26,8 +27,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   clockToMinutes,
-  DEFAULT_CORRECTION_REASON,
-  getCorrectionMeta,
   type AttendanceRecord,
   type AttendanceStatus,
 } from "../_data";
@@ -70,13 +69,15 @@ function formatDelta(original: string | null, next: string) {
 
 function StaffPhoto({ record }: { record: AttendanceRecord }) {
   const [failed, setFailed] = useState(false);
-  const showPhoto = record.avatar === "photo" && record.photo && !failed;
+  const photo = record.photo;
 
-  if (showPhoto) {
+  if (record.avatar === "photo" && photo && !failed) {
     return (
-      <img
-        src={record.photo}
+      <Image
+        src={photo}
         alt={record.name}
+        width={48}
+        height={48}
         className="size-12 rounded-full object-cover"
         onError={() => setFailed(true)}
       />

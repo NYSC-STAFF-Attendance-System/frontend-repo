@@ -19,9 +19,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import {
   actionOptions,
-  auditEvents,
   dateOptions,
-  getAuditEventDetail,
   moduleOptions,
   roleOptions,
   type AuditAction,
@@ -30,8 +28,6 @@ import {
 } from "../_data"
 import { useAuditLog } from "../_hooks/use-audit-log"
 import { AuditEventDrawer } from "./audit-event-drawer"
-
-const PAGE_SIZE = 7
 
 const actionTone: Record<AuditAction, string> = {
   "Attendance Corrected": "text-rose-500",

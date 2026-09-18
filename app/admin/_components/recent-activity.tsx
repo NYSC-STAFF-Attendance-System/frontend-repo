@@ -12,8 +12,6 @@ const tabs = [
   { id: "approvals", label: "Approvals" },
 ] as const
 
-type TabId = (typeof tabs)[number]["id"]
-
 const avatarClass: Record<Activity["avatar"], string> = {
   green: "bg-mint text-nysc-green",
   dark: "bg-ink text-white",
