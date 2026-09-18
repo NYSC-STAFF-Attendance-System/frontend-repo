@@ -153,7 +153,7 @@ export function AttendanceReports() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[32px] leading-none font-bold tracking-tight text-zinc-900">
+          <h1 className="text-[26px] leading-tight font-bold tracking-tight text-zinc-900 sm:text-[32px]">
             Attendance Reports
           </h1>
           <p className="mt-1.5 text-sm text-zinc-500">
@@ -170,7 +170,7 @@ export function AttendanceReports() {
       </div>
 
       <section className="rounded-[20px] border border-zinc-200/80 bg-white">
-        <div className="space-y-3 border-b border-zinc-100 p-4">
+        <div className="space-y-3 border-b border-zinc-100 p-3 sm:p-4">
           <label className="relative block">
             <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400" />
             <Input
@@ -182,7 +182,7 @@ export function AttendanceReports() {
             />
           </label>
 
-          <div className="grid min-w-0 grid-cols-5 gap-1 rounded-xl bg-zinc-100 p-1">
+          <div className="flex gap-1 overflow-x-auto rounded-xl bg-zinc-100 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-5 sm:overflow-visible">
             {periods.map((item) => (
               <button
                 key={item.value}
@@ -190,7 +190,7 @@ export function AttendanceReports() {
                 title={item.value}
                 onClick={() => setPeriod(item.value)}
                 className={cn(
-                  "min-w-0 truncate rounded-lg px-1 py-1.5 text-xs font-medium sm:text-sm",
+                  "shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap sm:min-w-0 sm:flex-1 sm:truncate sm:px-1 sm:text-sm",
                   period === item.value
                     ? "bg-nysc-dark text-white shadow-sm"
                     : "text-zinc-500 hover:text-zinc-800",

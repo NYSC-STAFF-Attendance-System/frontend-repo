@@ -72,8 +72,8 @@ export function RecentActivity() {
 
   return (
     <section className="overflow-hidden rounded-2xl border border-line/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4">
-        <div className="flex items-center gap-2.5">
+      <div className="flex flex-col gap-3 px-4 pt-5 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
+        <div className="flex min-w-0 flex-wrap items-center gap-2.5">
           <h2 className="text-base font-semibold tracking-tight text-ink">
             Recent Activity
           </h2>
@@ -83,14 +83,14 @@ export function RecentActivity() {
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex max-w-full items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setTab(item.id)}
               className={cn(
-                "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                "rounded-full px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-3 sm:text-sm",
                 tab === item.id
                   ? "bg-mint text-nysc-dark"
                   : "text-slate hover:text-ink"

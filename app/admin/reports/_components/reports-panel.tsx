@@ -167,9 +167,9 @@ export function ReportsPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[32px] leading-none font-bold tracking-tight text-ink">
+          <h1 className="text-[26px] leading-tight font-bold tracking-tight text-ink sm:text-[32px]">
             Reports
           </h1>
           <p className="mt-1.5 text-sm text-olive-muted">{periodRange[period]}</p>
@@ -179,7 +179,7 @@ export function ReportsPanel() {
             value={period}
             options={[...reportPeriods]}
             aria-label="Period"
-            className="w-36 border-line"
+            className="min-w-0 flex-1 border-line sm:w-36 sm:flex-none"
             onChange={(value) => setPeriod(value as ReportPeriod)}
           />
           <Button
@@ -210,7 +210,7 @@ export function ReportsPanel() {
           return (
             <article
               key={kpi.id}
-              className="flex items-center gap-3 border-b border-surface-200 px-4 py-4 md:border-r md:border-b-0 md:last:border-r-0"
+              className="flex min-w-0 items-center gap-3 border-b border-surface-200 px-3 py-4 sm:px-4 md:border-r md:border-b-0 md:last:border-r-0"
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-50 text-olive-muted">
                 <Icon className="size-4" />
@@ -312,8 +312,8 @@ export function ReportsPanel() {
         noun="records"
         minWidthClass="min-w-180"
         toolbar={
-          <div className="flex flex-wrap items-center gap-2 border-b border-surface-200 p-3">
-            <span className="relative min-w-48 flex-1">
+          <div className="flex flex-col gap-2 border-b border-surface-200 p-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <span className="relative min-w-0 flex-1 sm:min-w-48">
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate" />
               <Input
                 value={query}
@@ -326,14 +326,14 @@ export function ReportsPanel() {
               value={status}
               options={[...statusFilters]}
               aria-label="Status"
-              className="w-36 border-line"
+              className="w-full border-line sm:w-36"
               onChange={setStatus}
             />
             <FilterSelect
               value={station}
               options={[...stationFilters]}
               aria-label="Station"
-              className="w-40 border-line"
+              className="w-full border-line sm:w-40"
               onChange={(value) => setStation(value)}
             />
             <Button

@@ -34,7 +34,7 @@ export function HeaderActions() {
   const header = useAdminHeader()
 
   return (
-    <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
+    <div className="flex shrink-0 items-center gap-2 sm:gap-2.5 lg:gap-3">
       <NotificationsMenu {...header} />
       <HelpMenu go={header.go} />
       <AccountMenu {...header} />
@@ -137,7 +137,7 @@ function NoticeRow({ notice, unread }: { notice: HeaderNotice; unread: boolean }
 function HelpMenu({ go }: { go: (href: string) => void }) {
   return (
     <Popover>
-      <PopoverTrigger className={iconButtonClass} aria-label="Help">
+      <PopoverTrigger className={cn(iconButtonClass, "hidden sm:flex")} aria-label="Help">
         <CircleHelp className="size-4" />
       </PopoverTrigger>
       <PopoverContent className="w-[min(calc(100vw-2rem),340px)] overflow-hidden">

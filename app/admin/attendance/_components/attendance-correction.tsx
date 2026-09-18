@@ -118,8 +118,8 @@ export function AttendanceCorrection({ record }: { record: AttendanceRecord }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
           <Link
             href={detailsHref}
             aria-label="Back"
@@ -133,10 +133,10 @@ export function AttendanceCorrection({ record }: { record: AttendanceRecord }) {
             <ArrowLeft className="size-5" />
           </Link>
           <div>
-            <h1 className="text-[32px] leading-none font-bold tracking-tight text-zinc-900">
+            <h1 className="text-[26px] leading-tight font-bold tracking-tight text-zinc-900 sm:text-[32px]">
               Correct Attendance Record
             </h1>
-            <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 min-w-0 text-sm break-words text-zinc-500">
               {record.name} · {record.staffId} · {meta.fullDate}
             </p>
           </div>

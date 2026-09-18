@@ -7,7 +7,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink md:text-[32px]">
+        <h1 className="text-[26px] leading-tight font-semibold tracking-tight text-ink sm:text-[28px] md:text-[32px]">
           Welcome back, Admin
         </h1>
         <p className="mt-1.5 text-sm text-olive-muted">
