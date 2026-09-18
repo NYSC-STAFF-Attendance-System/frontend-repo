@@ -6,6 +6,7 @@
  * swapping to live endpoints touches one file rather than every component.
  */
 export * from "./office";
+export * from "./office-qr";
 export * from "./settings";
 export * from "./staff";
 export * from "./attendance";

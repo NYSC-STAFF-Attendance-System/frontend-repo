@@ -41,6 +41,24 @@ export const realApi: ApiClient = {
     },
   },
 
+  admin: {
+    async inviteAdmin() {
+      return pending();
+    },
+    async verifyAdminInvite() {
+      return pending();
+    },
+    async getOfficeQr() {
+      return pending();
+    },
+    async setOfficeQrAccepting() {
+      return pending();
+    },
+    async regenerateOfficeQr() {
+      return pending();
+    },
+  },
+
   registration: {
     async lookupStaffId() {
       return pending();

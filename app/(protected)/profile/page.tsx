@@ -2,12 +2,9 @@
 
 import { KeyRound, LogOut, Smartphone } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useStaff } from "@/components/auth-provider";
+import { useProfile } from "./use-profile";
 import { Screen } from "@/components/screen";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
 import { formatDayLabel } from "@/lib/format";
 
 /**
@@ -18,20 +15,14 @@ import { formatDayLabel } from "@/lib/format";
  * would let people quietly move themselves between offices.
  */
 export default function ProfilePage() {
-  const staff = useStaff();
-  const router = useRouter();
-  const [signingOut, setSigningOut] = useState(false);
-
-  async function handleSignOut() {
-    setSigningOut(true);
-    await api.auth.logout();
-    router.replace("/login");
-  }
+  const { staff, signingOut, handleSignOut } = useProfile();
 
   return (
     <Screen className="gap-6">
       <header>
-        <h1 className="text-2xl font-semibold text-foreground">{staff.fullName}</h1>
+        <h1 className="text-2xl font-semibold text-foreground">
+          {staff.fullName}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">{staff.staffId}</p>
       </header>
 
@@ -92,7 +83,9 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 px-3 py-2.5">
       <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium break-words text-foreground">{value}</dd>
+      <dd className="text-right font-medium wrap-break-words text-foreground">
+        {value}
+      </dd>
     </div>
   );
 }

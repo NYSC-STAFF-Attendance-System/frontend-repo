@@ -1,17 +1,22 @@
 import type { ApiClient } from "./types";
 import type { AttendanceDay, AttendanceOutcome, ScanResolution } from "@/types";
 import {
+  MOCK_ADMIN_INVITE_TOKEN,
+  MOCK_ADMIN_PASSWORD,
   MOCK_ROTATED_TOKEN,
-  MOCK_VALID_TOKEN,
+  defaultOfficeQrStation,
+  isAdminRole,
+  mockAccounts,
   mockAttendanceDays,
   mockAttendanceOutcomes,
-  mockBannedStaff,
   mockLookupResults,
   mockOffice,
+  mockOfficeQrStation,
   mockScanResolutions,
   mockStaff,
   mockStatistics,
 } from "@/lib/mock";
+import type { StaffProfile, StaffRole } from "@/types";
 
 /**
  * Mock implementation of ApiClient. Serves the fixtures in lib/mock with a
@@ -20,12 +25,17 @@ import {
  * DEMO INPUTS - how to reach each branch while building:
  *
  *   login
- *     NYSC/FCT/0842 + any password 8 chars or more   success
+ *     NYSC/FCT/0842 + any password 8 chars or more   staff success (not admin)
+ *     i.bello@nysc.gov.ng + NyscAdmin1               verified admin -> /admin
+ *     super.admin@nysc.gov.ng + NyscAdmin1           super admin -> /admin
  *     NYSC/FCT/0619 + any password                   account_banned
  *     any id + password "wrongdevice"                wrong_device
  *     any id + password "unverified"                 email_not_verified
  *     any id + password "offline"                    offline
  *     anything else                                  invalid_credentials
+ *
+ *   admin invite
+ *     /invite-admin?token=admin_invite_ok            promotes Chinedu to admin
  *
  *   lookupStaffId
  *     NYSC/FCT/0842   found
@@ -33,8 +43,9 @@ import {
  *     anything else   not_found
  *
  *   resolveToken
- *     the value of MOCK_VALID_TOKEN     resolved
- *     anything else                     invalid_token
+ *     current office QR token           resolved
+ *     a rotated / previous token        invalid_token
+ *     current token with scans off      office_inactive
  *
  *   submit
  *     Walks today forward: first call signs in, second signs out, third
@@ -84,8 +95,12 @@ function forced<T extends { kind: string }>(
  * Cleared by logout. The real client will hold a token issued by the backend and
  * none of this survives.
  */
-const SESSION_KEY = "nysc.mock.signedIn";
+const SESSION_KEY = "nysc.mock.signedInStaffId";
+const LEGACY_SESSION_KEY = "nysc.mock.signedIn";
 const TODAY_KEY = "nysc.mock.today";
+const ROLE_KEY = "nysc.mock.roleOverrides";
+const INVITES_KEY = "nysc.mock.adminInvites";
+const OFFICE_QR_KEY = "nysc.mock.officeQr";
 
 function readStore<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -117,13 +132,102 @@ function setToday(day: AttendanceDay | null): void {
   writeStore(TODAY_KEY, day);
 }
 
-/** Whether the mock considers someone signed in. Cleared by logout. */
-function isSignedIn(): boolean {
-  return readStore<boolean>(SESSION_KEY, false);
+function roleOverrides(): Record<string, StaffRole> {
+  return readStore<Record<string, StaffRole>>(ROLE_KEY, {});
 }
 
-function setSignedIn(value: boolean): void {
-  writeStore(SESSION_KEY, value);
+function withRole(profile: StaffProfile): StaffProfile {
+  return { ...profile, role: roleOverrides()[profile.staffId] ?? profile.role };
+}
+
+function findAccount(staffIdOrEmail: string): StaffProfile | undefined {
+  const needle = staffIdOrEmail.trim().toLowerCase();
+  return mockAccounts.find(
+    (account) =>
+      account.staffId.toLowerCase() === needle ||
+      account.email.toLowerCase() === needle,
+  );
+}
+
+function currentProfile(): StaffProfile | null {
+  const id = readStore<string | null>(SESSION_KEY, null);
+  if (id) {
+    const match = mockAccounts.find((account) => account.staffId === id);
+    return match ? withRole(match) : null;
+  }
+  // Older sessions only stored a boolean. Treat that as the staff fixture.
+  if (readStore<boolean>(LEGACY_SESSION_KEY, false)) {
+    return withRole(mockStaff);
+  }
+  return null;
+}
+
+function setSignedInStaffId(staffId: string | null): void {
+  writeStore(SESSION_KEY, staffId);
+  writeStore(LEGACY_SESSION_KEY, Boolean(staffId));
+}
+
+type StoredOfficeQr = {
+  token: string;
+  previousTokens: string[];
+  acceptingScans: boolean;
+  lastUpdatedAt: string;
+  lastUpdatedBy: string;
+};
+
+function officeQrStore(): StoredOfficeQr {
+  const fallback = defaultOfficeQrStation();
+  return readStore<StoredOfficeQr>(OFFICE_QR_KEY, {
+    token: fallback.token,
+    previousTokens: [MOCK_ROTATED_TOKEN],
+    acceptingScans: fallback.acceptingScans,
+    lastUpdatedAt: fallback.lastUpdatedAt,
+    lastUpdatedBy: fallback.lastUpdatedBy,
+  });
+}
+
+function stationFromStore(stored: StoredOfficeQr) {
+  return mockOfficeQrStation(stored);
+}
+
+function writeOfficeQr(next: StoredOfficeQr) {
+  const actor = currentProfile();
+  const stamped: StoredOfficeQr = {
+    ...next,
+    lastUpdatedBy: actor
+      ? `${actor.fullName} (${actor.role === "super_admin" ? "Super Admin" : "Office Admin"})`
+      : next.lastUpdatedBy,
+  };
+  writeStore(OFFICE_QR_KEY, stamped);
+  return stationFromStore(stamped);
+}
+
+function nowLabel() {
+  const now = new Date();
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const mer = now.getHours() >= 12 ? "PM" : "AM";
+  const hour = now.getHours() % 12 || 12;
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} · ${String(hour).padStart(2, "0")}:${minutes} ${mer}`;
+}
+
+function requireAdminQr() {
+  const actor = currentProfile();
+  if (!actor || !isAdminRole(actor.role)) return { kind: "forbidden" as const };
+  return null;
 }
 
 function buildSignIn(): AttendanceDay {
@@ -150,30 +254,118 @@ export const mockApi: ApiClient = {
         return { kind: "email_not_verified", email: mockStaff.email };
       }
 
-      const matchesBanned =
-        staffIdOrEmail === mockBannedStaff.staffId ||
-        staffIdOrEmail === mockBannedStaff.email;
-      if (matchesBanned) return { kind: "account_banned" };
+      const account = findAccount(staffIdOrEmail);
+      if (!account) return { kind: "invalid_credentials" };
+      if (account.accountStatus === "banned") return { kind: "account_banned" };
 
-      const matchesStaff =
-        staffIdOrEmail === mockStaff.staffId || staffIdOrEmail === mockStaff.email;
-      if (matchesStaff && password.length >= 8) {
-        setSignedIn(true);
-        return { kind: "success", staff: mockStaff };
+      const profile = withRole(account);
+      const usedEmail = staffIdOrEmail.includes("@");
+
+      // Email + admin password opens the dashboard. Staff ID (any 8+ chars)
+      // stays on the attendance app, even after the same person is invited.
+      if (usedEmail && isAdminRole(profile.role)) {
+        if (password !== MOCK_ADMIN_PASSWORD) return { kind: "invalid_credentials" };
+      } else if (password.length < 8) {
+        return { kind: "invalid_credentials" };
       }
 
-      return { kind: "invalid_credentials" };
+      setSignedInStaffId(profile.staffId);
+      return { kind: "success", staff: profile };
     },
 
     async logout() {
       await wait(150);
-      setSignedIn(false);
+      setSignedInStaffId(null);
       setToday(null);
     },
 
     async getProfile() {
       await wait(200);
-      return isSignedIn() ? mockStaff : null;
+      return currentProfile();
+    },
+  },
+
+  admin: {
+    async inviteAdmin(email) {
+      await wait();
+      const actor = currentProfile();
+      if (!actor || actor.role !== "super_admin") return { kind: "forbidden" };
+
+      const target = findAccount(email);
+      if (!target || target.role === "super_admin") return { kind: "not_staff" };
+      if (isAdminRole(withRole(target).role)) return { kind: "already_admin" };
+
+      const token = `invite_${target.staffId.replaceAll("/", "_")}`;
+      const invites = readStore<Record<string, string>>(INVITES_KEY, {});
+      invites[token] = target.staffId;
+      writeStore(INVITES_KEY, invites);
+
+      const origin = typeof window === "undefined" ? "" : window.location.origin;
+      return {
+        kind: "sent",
+        email: target.email,
+        inviteUrl: `${origin}/invite-admin?token=${token}`,
+      };
+    },
+
+    async verifyAdminInvite(token) {
+      await wait();
+      if (!token) return { kind: "invalid_token" };
+      if (token === "expired") return { kind: "expired_token" };
+
+      const invites = readStore<Record<string, string>>(INVITES_KEY, {});
+      const staffId =
+        token === MOCK_ADMIN_INVITE_TOKEN ? mockStaff.staffId : invites[token];
+      if (!staffId) return { kind: "invalid_token" };
+
+      const account = mockAccounts.find((item) => item.staffId === staffId);
+      if (!account) return { kind: "invalid_token" };
+
+      const current = withRole(account);
+      if (!isAdminRole(current.role)) {
+        writeStore(ROLE_KEY, { ...roleOverrides(), [staffId]: "admin" });
+      }
+      // Keep the token. React Strict Mode calls this twice; deleting it would
+      // make the second call look like an invalid link.
+      return { kind: "verified", email: account.email };
+    },
+
+    async getOfficeQr() {
+      await wait(200);
+      return { kind: "success", station: stationFromStore(officeQrStore()) };
+    },
+
+    async setOfficeQrAccepting(accepting) {
+      await wait();
+      const denied = requireAdminQr();
+      if (denied) return denied;
+      const stored = officeQrStore();
+      return {
+        kind: "success",
+        station: writeOfficeQr({
+          ...stored,
+          acceptingScans: accepting,
+          lastUpdatedAt: nowLabel(),
+        }),
+      };
+    },
+
+    async regenerateOfficeQr() {
+      await wait();
+      const denied = requireAdminQr();
+      if (denied) return denied;
+      const stored = officeQrStore();
+      const token = `qr_fct_hq_${Math.random().toString(36).slice(2, 8)}`;
+      return {
+        kind: "success",
+        station: writeOfficeQr({
+          token,
+          previousTokens: [...stored.previousTokens, stored.token],
+          acceptingScans: true,
+          lastUpdatedAt: nowLabel(),
+          lastUpdatedBy: stored.lastUpdatedBy,
+        }),
+      };
     },
   },
 
@@ -249,8 +441,16 @@ export const mockApi: ApiClient = {
       const override = forced<ScanResolution>("forceResolve", mockScanResolutions);
       if (override) return override;
 
-      if (token === MOCK_VALID_TOKEN) return { kind: "resolved", office: mockOffice };
-      if (token === MOCK_ROTATED_TOKEN) return { kind: "invalid_token" };
+      const qr = officeQrStore();
+      if (token === qr.token) {
+        if (!qr.acceptingScans) {
+          return {
+            kind: "error",
+            message: "This station is not accepting scans right now. Ask your office admin.",
+          };
+        }
+        return { kind: "resolved", office: mockOffice };
+      }
       return { kind: "invalid_token" };
     },
 
@@ -260,7 +460,9 @@ export const mockApi: ApiClient = {
       const override = forced<AttendanceOutcome>("force", mockAttendanceOutcomes);
       if (override) return override;
 
-      if (token !== MOCK_VALID_TOKEN) return { kind: "invalid_token" };
+      const qr = officeQrStore();
+      if (token !== qr.token) return { kind: "invalid_token" };
+      if (!qr.acceptingScans) return { kind: "office_inactive" };
 
       const current = getToday();
 

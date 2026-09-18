@@ -7,6 +7,7 @@
  */
 export * from "./department";
 export * from "./office";
+export * from "./office-qr";
 export * from "./settings";
 export * from "./staff";
 export * from "./attendance";

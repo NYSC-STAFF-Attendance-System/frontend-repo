@@ -1,47 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { HISTORY_PERIODS, useHistory } from "./use-history";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, LoadingState } from "@/components/states";
 import { StatusBadge } from "@/components/status-badge";
-import { api } from "@/lib/api";
 import { formatDayLabel, timeFromIso } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type {
-  AttendanceDay,
-  AttendanceStatistics,
-  HistoryPeriod,
-  HistoryResult,
-} from "@/types";
-
-type State =
-  | { name: "loading" }
-  | { name: "error"; message: string }
-  | { name: "ready"; days: AttendanceDay[]; statistics: AttendanceStatistics };
-
-function toState(result: HistoryResult): State {
-  if (result.kind === "success") {
-    return { name: "ready", days: result.days, statistics: result.statistics };
-  }
-  return {
-    name: "error",
-    message:
-      result.kind === "offline"
-        ? "You appear to be offline. Your records are safe on the server."
-        : result.message,
-  };
-}
-
-/**
- * The custom range option from HistoryPeriod is deliberately not offered yet.
- * It needs a date picker, and shipping a fourth tab that opens nothing is worse
- * than three tabs that all work.
- */
-const PERIODS: { value: Exclude<HistoryPeriod, "custom">; label: string }[] = [
-  { value: "today", label: "Today" },
-  { value: "this_week", label: "This week" },
-  { value: "this_month", label: "This month" },
-];
+import type { AttendanceDay, AttendanceStatistics } from "@/types";
 
 /**
  * /history - the staff member's own attendance record.
@@ -52,42 +17,7 @@ const PERIODS: { value: Exclude<HistoryPeriod, "custom">; label: string }[] = [
  * admin reports.
  */
 export default function HistoryPage() {
-  const [period, setPeriod] = useState<Exclude<HistoryPeriod, "custom">>("this_month");
-  const [state, setState] = useState<State>({ name: "loading" });
-
-  /**
-   * Fetches one period and returns a cleanup function that ignores a late
-   * response. Written once so the effect and the retry button cannot drift.
-   *
-   * Note what it does NOT do: set the loading state. Doing that synchronously
-   * inside an effect causes a second render pass immediately after the first.
-   * The state already starts as loading, and the two places that change period
-   * are both event handlers, which are free to set it themselves.
-   */
-  const fetchPeriod = useCallback((next: Exclude<HistoryPeriod, "custom">) => {
-    let active = true;
-
-    api.attendance.history({ period: next }).then((result) => {
-      if (!active) return;
-      setState(toState(result));
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => fetchPeriod(period), [period, fetchPeriod]);
-
-  function selectPeriod(next: Exclude<HistoryPeriod, "custom">) {
-    setState({ name: "loading" });
-    setPeriod(next);
-  }
-
-  function retry() {
-    setState({ name: "loading" });
-    fetchPeriod(period);
-  }
+  const { period, state, selectPeriod, retry } = useHistory();
 
   return (
     <Screen className="gap-5">
@@ -103,7 +33,7 @@ export default function HistoryPage() {
           Horizontally scrollable so the row never forces the page wider than
           the screen on a narrow phone. */}
       <div role="group" aria-label="Period" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {PERIODS.map((option) => {
+        {HISTORY_PERIODS.map((option) => {
           const selected = option.value === period;
           return (
             <button

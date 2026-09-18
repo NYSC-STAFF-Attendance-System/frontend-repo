@@ -1,6 +1,6 @@
 "use client";
 
-import { useStaff } from "@/components/auth-provider";
+import { useStaff } from "@/hooks/use-staff";
 import { BrandMark } from "@/components/brand";
 
 /**
@@ -36,7 +36,7 @@ export function AppBar() {
       className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      <div className="mx-auto flex h-[52px] w-full max-w-[28rem] items-center gap-2.5 px-4">
+      <div className="mx-auto flex h-13 w-full max-w-md items-center gap-2.5 px-4">
         <BrandMark size={28} />
 
         <div className="flex min-w-0 flex-col leading-tight">

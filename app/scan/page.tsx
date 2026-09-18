@@ -11,17 +11,17 @@ import { ScanView } from "./scan-view";
  * but no bottom navigation. The sign in button has to sit within the fold at
  * 375px, and a fixed bar would take 56 pixels of it.
  *
- * AuthGuard sits above Suspense because it does not read the URL. ScanView does,
- * so the boundary has to be between the two.
+ * AuthGuard also reads the URL (to send a login redirect), so both it and
+ * ScanView sit inside Suspense.
  */
 export default function ScanPage() {
   return (
-    <AuthGuard>
-      <Screen>
-        <Suspense fallback={<LoadingState label="Loading" />}>
+    <Suspense fallback={<LoadingState label="Loading" />}>
+      <AuthGuard>
+        <Screen>
           <ScanView />
-        </Suspense>
-      </Screen>
-    </AuthGuard>
+        </Screen>
+      </AuthGuard>
+    </Suspense>
   );
 }
