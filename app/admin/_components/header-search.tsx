@@ -110,7 +110,7 @@ export function HeaderSearch() {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-[min(calc(100vw-1.5rem),460px)] overflow-hidden p-0"
+        className="w-[min(calc(100vw-1rem),460px)] max-h-[min(32rem,calc(100dvh-5rem))] overflow-hidden p-0"
         initialFocus={inputRef}
       >
         <SearchPanel search={search} inputRef={inputRef} />

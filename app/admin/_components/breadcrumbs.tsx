@@ -54,7 +54,7 @@ export function Breadcrumbs() {
   const crumbs = crumbsFor(pathname)
 
   return (
-    <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
+    <nav aria-label="Breadcrumb" className="hidden min-w-0 flex-1 lg:block">
       <ol className="flex min-w-0 items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
         {crumbs.map((crumb, index) => {
           const last = index === crumbs.length - 1

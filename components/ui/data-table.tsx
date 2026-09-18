@@ -144,7 +144,7 @@ export function DataTable<T>({
               {columns.map((column) => (
                 <th
                   key={column.id}
-                  className={cn("px-5 py-3 font-semibold", column.headerClassName)}
+                  className={cn("px-3 py-3 font-semibold sm:px-5", column.headerClassName)}
                 >
                   {column.header}
                 </th>
@@ -156,7 +156,7 @@ export function DataTable<T>({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-5 py-16 text-center text-sm text-olive-muted"
+                  className="px-3 py-16 text-center text-sm text-olive-muted sm:px-5"
                 >
                   {empty}
                 </td>
@@ -187,7 +187,7 @@ export function DataTable<T>({
                   {columns.map((column) => (
                     <td
                       key={column.id}
-                      className={cn("px-5 py-4", column.className)}
+                      className={cn("px-3 py-4 sm:px-5", column.className)}
                     >
                       {column.cell(row)}
                     </td>
@@ -199,7 +199,7 @@ export function DataTable<T>({
         </table>
       </div>
       {enablePagination || footer ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-4 sm:px-5">
           {footer ?? (
             <p className="text-sm text-olive-muted">
               Showing{" "}

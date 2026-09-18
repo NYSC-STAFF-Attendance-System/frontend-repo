@@ -53,7 +53,7 @@ export function OfficeQrPanel() {
     <div className="flex flex-col gap-5 print:gap-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between print:hidden">
         <div>
-          <h1 className="text-[32px] leading-none font-bold tracking-tight text-ink">
+          <h1 className="text-[26px] leading-tight font-bold tracking-tight text-ink sm:text-[32px]">
             Office QR Code
           </h1>
           <p className="mt-2 max-w-xl text-sm text-olive-muted">
@@ -61,12 +61,12 @@ export function OfficeQrPanel() {
             attendance verification at this office.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
             onClick={qr.printPoster}
-            className="h-11 rounded-xl border-line"
+            className="h-11 flex-1 rounded-xl border-line sm:flex-none"
           >
             <Printer data-icon="inline-start" className="size-4" />
             Print QR Poster
@@ -74,7 +74,7 @@ export function OfficeQrPanel() {
           <Button
             type="button"
             onClick={qr.openKiosk}
-            className="h-11 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90"
+            className="h-11 flex-1 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90 sm:flex-none"
           >
             <Expand data-icon="inline-start" className="size-4" />
             Full Screen Kiosk Mode
@@ -86,7 +86,7 @@ export function OfficeQrPanel() {
         <span className="flex size-9 items-center justify-center rounded-xl bg-nysc-muted text-nysc">
           <Building2 className="size-4" />
         </span>
-        <div className="min-w-48 flex-1">
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-olive-muted uppercase">
             Active office station
           </p>

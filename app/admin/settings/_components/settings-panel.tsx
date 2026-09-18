@@ -54,7 +54,7 @@ export function SettingsPanel() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[32px] leading-none font-bold tracking-tight text-zinc-900">
+          <h1 className="text-[26px] leading-tight font-bold tracking-tight text-zinc-900 sm:text-[32px]">
             Settings
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-500">
@@ -62,7 +62,7 @@ export function SettingsPanel() {
             validation.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <p className="text-xs font-medium text-nysc">
             {dirty ? "Unsaved changes" : "All changes saved"}
           </p>
@@ -81,7 +81,7 @@ export function SettingsPanel() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-4">
           <section className="rounded-[20px] border border-zinc-200/80 bg-white p-5">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <span className="flex size-9 items-center justify-center rounded-full bg-nysc-muted text-nysc">
                   <Clock className="size-4" />
@@ -96,7 +96,7 @@ export function SettingsPanel() {
                   </p>
                 </div>
               </div>
-              <span className="rounded-full bg-nysc-muted px-2.5 py-1 text-[10px] font-bold tracking-wide text-nysc uppercase">
+              <span className="shrink-0 rounded-full bg-nysc-muted px-2.5 py-1 text-[10px] font-bold tracking-wide text-nysc uppercase">
                 Shift Policy
               </span>
             </div>
@@ -170,7 +170,7 @@ export function SettingsPanel() {
           </section>
 
           <section className="rounded-[20px] border border-zinc-200/80 bg-white p-5">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <span className="flex shrink-0 size-9 items-center justify-center rounded-full bg-nysc-muted text-nysc">
                   <Shield className="size-4" />
@@ -216,7 +216,7 @@ export function SettingsPanel() {
 
         <div className="flex min-w-0 flex-col gap-4">
           <section className="rounded-[20px] border border-zinc-200/80 bg-white p-5">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <span className="flex size-9 items-center justify-center rounded-full bg-nysc-muted text-nysc">
                   <MapPin className="size-4" />
@@ -336,7 +336,7 @@ export function SettingsPanel() {
           </section>
 
           <section className="rounded-[20px] border border-zinc-200/80 bg-white p-5">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <span className="flex size-9 items-center justify-center rounded-full bg-nysc-muted text-nysc">
                   <Globe className="size-4" />

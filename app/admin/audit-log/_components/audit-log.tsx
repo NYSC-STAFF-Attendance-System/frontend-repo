@@ -87,7 +87,7 @@ export function AuditLog() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[32px] leading-none font-bold tracking-tight text-zinc-900">
+          <h1 className="text-[26px] leading-tight font-bold tracking-tight text-zinc-900 sm:text-[32px]">
             Audit Log
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-500">
@@ -128,7 +128,7 @@ export function AuditLog() {
       </div>
 
       <section className="rounded-[20px] border border-zinc-200/80 bg-white">
-        <div className="grid gap-3 border-b border-zinc-100 p-5 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 border-b border-zinc-100 p-3 sm:grid-cols-2 sm:p-5 lg:grid-cols-5">
           <span className="relative block">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
             <Input
@@ -305,7 +305,7 @@ export function AuditLog() {
       >
         <SheetContent
           showCloseButton={false}
-          className="gap-0 rounded-l-[20px] border-line p-0 data-[side=right]:sm:max-w-md"
+          className="gap-0 rounded-none border-line p-0 sm:rounded-l-[20px] data-[side=right]:sm:max-w-md"
         >
           {selectedDetail ? <AuditEventDrawer detail={selectedDetail} /> : null}
         </SheetContent>
@@ -334,7 +334,7 @@ function StatCard({
           <p className="text-[10px] font-semibold tracking-[0.14em] text-zinc-400 uppercase">
             {label}
           </p>
-          <p className="mt-2 text-[32px] leading-none font-bold tracking-tight text-zinc-900">
+          <p className="mt-2 text-[28px] leading-none font-bold tracking-tight text-zinc-900 sm:text-[32px]">
             {value}
           </p>
         </div>

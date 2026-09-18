@@ -8,7 +8,7 @@ const SCALE_MAX = 210
 
 export function WeeklyTrend() {
   return (
-    <section className="rounded-[20px] border border-line/80 bg-white px-6 pt-6 pb-16">
+    <section className="rounded-[20px] border border-line/80 bg-white px-4 pt-5 pb-10 sm:px-6 sm:pt-6 sm:pb-16">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
@@ -73,7 +73,7 @@ export function WeeklyTrend() {
             <p
               key={day.label}
               className={cn(
-                "min-w-0 flex-1 text-center text-[13px] whitespace-nowrap",
+                "min-w-0 flex-1 text-center text-[11px] whitespace-nowrap sm:text-[13px]",
                 isToday
                   ? "font-semibold text-nysc-mid"
                   : "font-medium text-slate"

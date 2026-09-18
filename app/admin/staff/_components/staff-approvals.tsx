@@ -92,7 +92,7 @@ export function StaffApprovals() {
       <InviteAdminPanel />
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
-          <h1 className="text-[32px] leading-none font-bold tracking-tight text-zinc-900">
+          <h1 className="text-[26px] leading-tight font-bold tracking-tight text-zinc-900 sm:text-[32px]">
             Registration Approvals
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-500">
@@ -117,7 +117,7 @@ export function StaffApprovals() {
               <p className="text-[11px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
                 Total Pending
               </p>
-              <p className="mt-3 text-[40px] leading-none font-semibold tracking-tight text-zinc-900">
+              <p className="mt-3 text-[32px] leading-none font-semibold tracking-tight text-zinc-900 sm:text-[40px]">
                 {queue.length}
               </p>
             </div>
@@ -137,7 +137,7 @@ export function StaffApprovals() {
               <p className="text-[11px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
                 Requests Today
               </p>
-              <p className="mt-3 text-[40px] leading-none font-semibold tracking-tight text-zinc-900">
+              <p className="mt-3 text-[32px] leading-none font-semibold tracking-tight text-zinc-900 sm:text-[40px]">
                 4
               </p>
             </div>
@@ -154,7 +154,7 @@ export function StaffApprovals() {
               <p className="text-[11px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
                 Approved Today
               </p>
-              <p className="mt-3 text-[40px] leading-none font-semibold tracking-tight text-nysc">
+              <p className="mt-3 text-[32px] leading-none font-semibold tracking-tight text-nysc sm:text-[40px]">
                 {approvedToday}
               </p>
             </div>
@@ -192,7 +192,7 @@ export function StaffApprovals() {
         id="approvals-table"
         className="overflow-hidden rounded-[20px] border border-zinc-200/80 bg-white"
       >
-        <div className="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 px-3 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
           <label className="relative w-full max-w-xs">
             <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400" />
             <Input
@@ -214,7 +214,7 @@ export function StaffApprovals() {
                 setPage(1)
               }}
               aria-label="Filter Department"
-              className="w-auto min-w-40 rounded-xl"
+              className="w-full min-w-0 rounded-xl sm:w-auto sm:min-w-40"
               options={[
                 { value: "all", label: "Filter Department" },
                 ...departments,
@@ -227,7 +227,7 @@ export function StaffApprovals() {
                 setPage(1)
               }}
               aria-label="Filter Office"
-              className="w-auto min-w-40 rounded-xl"
+              className="w-full min-w-0 rounded-xl sm:w-auto sm:min-w-40"
               options={[
                 { value: "all", label: "Filter Office" },
                 ...offices,

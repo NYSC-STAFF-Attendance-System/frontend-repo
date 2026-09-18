@@ -83,7 +83,7 @@ export function StatCards() {
         return (
           <article
             key={card.label}
-            className="rounded-2xl border border-line/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
+            className="rounded-2xl border border-line/80 bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:p-4"
           >
             <div className="mb-4 flex items-start justify-between gap-2">
               <p className="text-[11px] font-semibold tracking-[0.08em] text-olive-muted uppercase">
@@ -100,7 +100,7 @@ export function StatCards() {
             </div>
             <p
               className={cn(
-                "text-[32px] leading-none font-semibold tracking-tight",
+                "text-[26px] leading-none font-semibold tracking-tight sm:text-[32px]",
                 card.valueClass
               )}
             >
