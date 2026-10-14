@@ -31,10 +31,21 @@ not yet hosted. **The entire app currently runs on mock data.**
 
 ## Running it
 
+### Deployed
+
+Live at **https://nysc-staff-attendance-system.vercel.app**, deployed by Vercel
+from the `develop` branch. Every push to `develop` redeploys it. Real HTTPS, so
+the full scan flow works on any phone with no setup.
+
+### Locally
+
 ```bash
 yarn install
 yarn dev            # http://localhost:3000
 ```
+
+On the laptop itself, `localhost` counts as a secure origin, so location and
+the camera work over plain HTTP.
 
 ### On a phone
 
@@ -51,6 +62,15 @@ on a phone on the same wifi and tap through the certificate warning
 (**Advanced → Proceed**).
 
 Find your LAN IP with `ipconfig` (Windows) or `ifconfig` (macOS/Linux).
+
+Office wifi usually blocks devices from reaching each other. The reliable setup
+is to turn on **Mobile Hotspot on the laptop** and connect the phone to it:
+Windows always gives the laptop `192.168.137.1` on that network, so the phone
+URL is always `https://192.168.137.1:3000`. Any address you use must be listed
+in `allowedDevOrigins` in `next.config.ts`.
+
+In Git Bash, stop an old dev server with doubled slashes:
+`taskkill //PID <pid> //F`.
 
 ### Checks
 
@@ -102,8 +122,14 @@ stand outside a fictional geofence. Append to the `/scan` URL:
 Location failures are reached through DevTools → Sensors → Location, or by
 blocking location for the site in the address bar.
 
-Demo session state lives in `sessionStorage`, so scanning the QR continues the
-same day. Closing the tab starts a fresh demo.
+Demo session state lives in `localStorage`. It has to: scanning the QR opens a
+new tab, and `sessionStorage` is scoped to one tab, so the session would be
+lost on arrival. Sign out to reset the demo.
+
+**Location is really read, but not checked.** Tapping Sign in reads the phone's
+actual position and passes it to the API client. The mock ignores it, so you
+are signed in wherever you are, and the coordinates never leave the phone. The
+geofence check belongs to the backend.
 
 ---
 
@@ -287,10 +313,13 @@ zooming the page when a field receives focus, which then stays wrong for the
 rest of the session. Do not reduce it.
 
 **Base UI uses `render`, not `asChild`.** Most shadcn examples online assume
-Radix:
+Radix. When the rendered element is not a `<button>`, also pass
+`nativeButton={false}`, or Base UI warns and strips button semantics:
 
 ```tsx
-<Button render={<Link href="/login" />} size="xl">Go to sign in</Button>
+<Button render={<Link href="/login" />} nativeButton={false} size="xl">
+  Go to sign in
+</Button>
 ```
 
 **Comments explain why, not what.** Every component has a short block saying what
@@ -307,6 +336,7 @@ and the brand shell.
 **Not done**
 
 - `real.ts` is a stub; no live endpoints are wired
+- No geofence check: location is read, the mock ignores it
 - `/scan`, `/history` and `/profile` work correctly but have not had the visual
   pass `/home` and `/login` have
 - `/register`, `/verify-email`, `/forgot-password`, `/reset-password` and
