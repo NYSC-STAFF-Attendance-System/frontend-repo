@@ -4,7 +4,9 @@ import type {
   Coordinates,
   HistoryPeriod,
   HistoryResult,
+  InviteAdminResult,
   LoginResult,
+  OfficeQrResult,
   PasswordResetRequestResult,
   RegisterResult,
   ResetPasswordResult,
@@ -12,6 +14,7 @@ import type {
   StaffLookupOutcome,
   StaffProfile,
   TodayResult,
+  VerifyAdminInviteResult,
   VerifyEmailResult,
 } from "@/types";
 
@@ -38,6 +41,19 @@ export type ApiClient = {
 
     /** Null when nobody is signed in. Drives the redirect on protected routes. */
     getProfile(): Promise<StaffProfile | null>;
+  };
+
+  admin: {
+    /** Super admin only. Sends an invite link to an existing staff email. */
+    inviteAdmin(email: string): Promise<InviteAdminResult>;
+
+    /** Public. Following the invite email upgrades that staff to admin. */
+    verifyAdminInvite(token: string): Promise<VerifyAdminInviteResult>;
+
+    /** The printed station QR staff scan to open /scan. */
+    getOfficeQr(): Promise<OfficeQrResult>;
+    setOfficeQrAccepting(accepting: boolean): Promise<OfficeQrResult>;
+    regenerateOfficeQr(): Promise<OfficeQrResult>;
   };
 
   registration: {

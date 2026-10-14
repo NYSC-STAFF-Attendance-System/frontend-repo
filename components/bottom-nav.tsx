@@ -31,7 +31,7 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <ul className="mx-auto flex w-full max-w-[28rem]">
+      <ul className="mx-auto flex w-full max-w-md">
         {TABS.map((tab) => {
           // startsWith so /profile/password keeps the Profile tab lit.
           const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);

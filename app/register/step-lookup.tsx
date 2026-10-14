@@ -1,14 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
 import { assertNever } from "@/lib/utils";
-import type { StaffLookupOutcome, StaffLookupResult } from "@/types";
-
-type LookupFailure = Exclude<StaffLookupOutcome, { kind: "found" }>;
+import type { StaffLookupResult } from "@/types";
+import { useStepLookup, type LookupFailure } from "./use-step-lookup";
 
 /**
  * Registration is a claim, not a sign up. An admin creates the staff record
@@ -16,34 +13,10 @@ type LookupFailure = Exclude<StaffLookupOutcome, { kind: "found" }>;
  * Nothing is created here.
  */
 export function StepLookup({ onFound }: { onFound: (staff: StaffLookupResult) => void }) {
-  const [staffId, setStaffId] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [fieldError, setFieldError] = useState<string | null>(null);
-  const [failure, setFailure] = useState<LookupFailure | null>(null);
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFailure(null);
-
-    if (!staffId.trim()) {
-      setFieldError("Enter your staff ID.");
-      return;
-    }
-    setFieldError(null);
-
-    setSubmitting(true);
-    const outcome = await api.registration.lookupStaffId(staffId);
-    setSubmitting(false);
-
-    if (outcome.kind === "found") {
-      onFound(outcome.staff);
-      return;
-    }
-    setFailure(outcome);
-  }
+  const { staffId, setStaffId, submitting, fieldError, failure, submit } = useStepLookup(onFound);
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
       <Field
         label="Staff ID"
         name="staffId"

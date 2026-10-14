@@ -1,19 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/states";
 import { api } from "@/lib/api";
 import { assertNever } from "@/lib/utils";
 import type { VerifyEmailResult } from "@/types";
-
-type State =
-  /** Arrived from /register. No token yet - the link is in their inbox. */
-  | { name: "awaiting_link" }
-  | { name: "verifying" }
-  | { name: "result"; result: VerifyEmailResult };
+import { useResendVerification, useVerifyEmail } from "./use-verify-email";
 
 /**
  * Serves two arrivals with one implementation:
@@ -24,27 +17,7 @@ type State =
  * Keeping both here means the wording about what to do next exists once.
  */
 export function VerifyEmailView() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const email = searchParams.get("email");
-
-  const [state, setState] = useState<State>(
-    token ? { name: "verifying" } : { name: "awaiting_link" },
-  );
-
-  useEffect(() => {
-    if (!token) return;
-    let active = true;
-
-    api.registration.verifyEmail(token).then((result) => {
-      if (!active) return;
-      setState({ name: "result", result });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [token]);
+  const { email, state } = useVerifyEmail();
 
   if (state.name === "verifying") {
     return <LoadingState label="Confirming your email" />;
@@ -58,16 +31,7 @@ export function VerifyEmailView() {
 }
 
 function AwaitingLink({ email }: { email: string | null }) {
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
-
-  async function handleResend() {
-    if (!email) return;
-    setResending(true);
-    await api.registration.resendVerification(email);
-    setResending(false);
-    setResent(true);
-  }
+  const { resending, resent, resend } = useResendVerification(email);
 
   return (
     <div className="flex flex-col gap-6">
@@ -95,7 +59,7 @@ function AwaitingLink({ email }: { email: string | null }) {
           <Button
             variant="ghost"
             size="lg"
-            onClick={handleResend}
+            onClick={resend}
             disabled={resending || resent}
             className="w-full"
           >
@@ -127,8 +91,6 @@ function Outcome({ result, email }: { result: VerifyEmailResult; email: string |
           Go to sign in
         </Button>
 
-        {/* Only offered where a fresh link would actually help. An invalid
-            token and a verified account both stay silent here. */}
         {canResend && email ? (
           <Button
             variant="outline"

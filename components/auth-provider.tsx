@@ -1,76 +1,102 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { notFound, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { Screen } from "@/components/screen";
 import { LoadingState } from "@/components/states";
-import { api } from "@/lib/api";
-import type { StaffProfile } from "@/types";
+import { useStaff } from "@/hooks/use-staff";
+import { currentPath, isAdminRole, loginHref } from "@/lib/auth/redirect";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { hydrateAuth } from "@/lib/store/slices/auth-slice";
 
-const StaffContext = createContext<StaffProfile | null>(null);
+export { useStaff };
 
-/**
- * The signed-in staff member, for any screen inside AuthGuard.
- *
- * Returns a StaffProfile, never null, because the guard does not render its
- * children until it has one. Screens therefore never write `staff?.fullName`.
- */
-export function useStaff(): StaffProfile {
-  const staff = useContext(StaffContext);
-  if (!staff) {
-    throw new Error("useStaff was called outside AuthGuard.");
-  }
-  return staff;
-}
-
-/**
- * Gate for every signed-in screen.
- *
- * Written once here rather than repeated in each page, so there is one place
- * where "who is allowed in" is decided and one place to change it.
- *
- * This is convenience, not security. Anyone can open a protected URL and read
- * the JavaScript; what actually protects the data is the backend refusing a
- * request without a valid session. The guard's job is to send people somewhere
- * sensible instead of showing them a broken screen.
- */
-export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const [staff, setStaff] = useState<StaffProfile | null>(null);
-
-  useEffect(() => {
-    let active = true;
-
-    api.auth.getProfile().then((profile) => {
-      if (!active) return;
-
-      if (!profile) {
-        // replace, not push: a signed-out user pressing Back should not land
-        // on the protected page they were just bounced off.
-        router.replace("/login");
-        return;
-      }
-
-      if (profile.accountStatus === "banned") {
-        router.replace("/blocked?reason=banned");
-        return;
-      }
-
-      setStaff(profile);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [router]);
-
-  if (!staff) {
+function GuardLoading({ variant }: { variant: "staff" | "admin" }) {
+  if (variant === "admin") {
     return (
-      <Screen>
+      <div className="flex min-h-dvh items-center justify-center bg-page">
         <LoadingState label="Checking your account" />
-      </Screen>
+      </div>
     );
   }
 
-  return <StaffContext.Provider value={staff}>{children}</StaffContext.Provider>;
+  return (
+    <Screen>
+      <LoadingState label="Checking your account" />
+    </Screen>
+  );
+}
+
+export function AuthGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const dispatch = useAppDispatch();
+  const status = useAppSelector((state) => state.auth.status);
+  const profile = useAppSelector((state) => state.auth.profile);
+
+  useEffect(() => {
+    void dispatch(hydrateAuth());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (status === "idle" || status === "loading") return;
+    if (!profile) {
+      router.replace(loginHref(currentPath(pathname, searchParams.toString() ? `?${searchParams}` : "")));
+      return;
+    }
+    if (profile.accountStatus === "banned") {
+      router.replace("/blocked?reason=banned");
+    }
+  }, [pathname, profile, router, searchParams, status]);
+
+  if (status === "idle" || status === "loading" || !profile) {
+    return <GuardLoading variant="staff" />;
+  }
+
+  if (profile.accountStatus === "banned") {
+    return <GuardLoading variant="staff" />;
+  }
+
+  return children;
+}
+
+/**
+ * Gate for /admin.
+ *
+ * Signed-out visitors are sent to login with a redirect back here.
+ * Signed-in staff who were never invited still get a 404.
+ */
+export function AdminGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const dispatch = useAppDispatch();
+  const status = useAppSelector((state) => state.auth.status);
+  const profile = useAppSelector((state) => state.auth.profile);
+
+  useEffect(() => {
+    void dispatch(hydrateAuth());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (status === "idle" || status === "loading") return;
+    if (!profile) {
+      router.replace(loginHref(currentPath(pathname, searchParams.toString() ? `?${searchParams}` : "")));
+    }
+  }, [pathname, profile, router, searchParams, status]);
+
+  if (status === "idle" || status === "loading") {
+    return <GuardLoading variant="admin" />;
+  }
+
+  if (!profile) {
+    return <GuardLoading variant="admin" />;
+  }
+
+  if (!isAdminRole(profile.role) || profile.accountStatus === "banned") {
+    notFound();
+  }
+
+  return children;
 }

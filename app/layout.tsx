@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { OfflineBanner } from "@/components/offline-banner";
+import { StoreProvider } from "@/lib/store/provider";
 import { cn } from "@/lib/utils";
 
 // Single font for the whole app. Staff open this on phones, often on slow
@@ -19,7 +20,7 @@ export const viewport: Viewport = {
   // The app ships one colour scheme. Declaring it stops mobile browsers from
   // auto-darkening form controls, which would break the contrast we verify.
   colorScheme: "light",
-  themeColor: "#ffffff",
+  themeColor: "#F8F9FB",
 };
 
 /**
@@ -36,8 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={cn("h-full", "antialiased", inter.variable, "font-sans")}>
       <body className="min-h-full flex flex-col">
-        <OfflineBanner />
-        {children}
+        <StoreProvider>
+          <OfflineBanner />
+          {children}
+        </StoreProvider>
       </body>
     </html>
   );
