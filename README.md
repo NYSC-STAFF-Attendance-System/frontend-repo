@@ -88,10 +88,10 @@ Everything is served by a mock client. No backend required.
 
 | Purpose | Value |
 |---|---|
-| Staff ID | `NYSC/FCT/0842` |
+| Staff ID | `0842` |
 | Password | `password123` (any 8+ characters) |
-| Banned account | `NYSC/FCT/0619` |
-| Already-registered staff ID | `NYSC/FCT/0619` |
+| Banned account | `0619` |
+| Already-registered staff ID | `0619` |
 | Scan token | `qr_fct_hq_9f2a7c` |
 
 Passwords that force a specific login failure: `wrongdevice`, `unverified`,

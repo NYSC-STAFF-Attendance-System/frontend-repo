@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_RESPONSE_MESSAGE } from "@/lib/messages";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { assertNever } from "@/lib/utils";
@@ -72,7 +73,7 @@ function messageFor(
 ): string {
   switch (result.kind) {
     case "offline":
-      return "You appear to be offline. Check your connection and try again.";
+      return NO_RESPONSE_MESSAGE;
     case "error":
       return result.message;
     default:

@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_RESPONSE_MESSAGE } from "@/lib/messages";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { getDeviceId } from "@/lib/device";
@@ -7,13 +8,37 @@ import { assertNever } from "@/lib/utils";
 import type { RegisterResult, StaffLookupResult } from "@/types";
 
 type RegisterFailure = Exclude<RegisterResult, { kind: "success" }>;
-export type RegisterFieldErrors = Partial<
-  Record<"email" | "phone" | "password" | "confirm", string>
->;
+type FormField = "email" | "phone" | "password" | "confirm";
+export type RegisterFieldErrors = Partial<Record<FormField, string>>;
+
+const FORM_FIELDS: readonly FormField[] = ["email", "phone", "password", "confirm"];
+
+/**
+ * Sorts the server's field errors into the ones this form can show under an
+ * input, and the rest.
+ *
+ * The server can reject fields the person never sees here - staffId and
+ * deviceId are filled in by the app. Those messages must still reach the
+ * person, so they are returned separately to show above the button, rather
+ * than being dropped.
+ */
+function splitFieldErrors(fieldErrors: Record<string, string>): {
+  fields: RegisterFieldErrors;
+  other: string[];
+} {
+  const fields: RegisterFieldErrors = {};
+  const other: string[] = [];
+  for (const [key, message] of Object.entries(fieldErrors)) {
+    const field = FORM_FIELDS.find((name) => name === key);
+    if (field) fields[field] = message;
+    else other.push(message);
+  }
+  return { fields, other };
+}
 
 export function useStepDetails(
   staff: StaffLookupResult,
-  onRegistered: (email: string) => void,
+  onRegistered: (registered: { email: string; staffId: string }) => void,
 ) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -57,12 +82,16 @@ export function useStepDetails(
     setSubmitting(false);
 
     if (result.kind === "success") {
-      onRegistered(result.email);
+      // The staff ID travels on so /verify-email can resend the link: the
+      // backend resends by staff ID, not by email.
+      onRegistered({ email: result.email, staffId: staff.staffId });
       return;
     }
 
     if (result.kind === "invalid_details") {
-      setErrors(result.fieldErrors as RegisterFieldErrors);
+      const { fields, other } = splitFieldErrors(result.fieldErrors);
+      setErrors(fields);
+      setFormError(other.length > 0 ? other.join(" ") : null);
       return;
     }
 
@@ -90,7 +119,7 @@ function messageFor(result: Exclude<RegisterFailure, { kind: "invalid_details" }
     case "already_registered":
       return "This staff ID was registered while you were filling this in. Try signing in instead.";
     case "offline":
-      return "You appear to be offline. Check your connection and try again.";
+      return NO_RESPONSE_MESSAGE;
     case "error":
       return result.message;
     default:

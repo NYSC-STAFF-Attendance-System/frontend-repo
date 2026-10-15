@@ -1,8 +1,9 @@
 "use client";
 
+import { NO_RESPONSE_MESSAGE } from "@/lib/messages";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { destinationAfterLogin } from "@/lib/auth/redirect";
+import { staffDestination } from "@/lib/auth/redirect";
 import { getDeviceId } from "@/lib/device";
 import { api } from "@/lib/api";
 import { useAppDispatch } from "@/lib/store/hooks";
@@ -28,7 +29,7 @@ export function messageForLogin(result: LoginFailure): string {
         ? `Too many attempts. Try again in ${result.retryAfterSeconds} seconds.`
         : "Too many attempts. Try again shortly.";
     case "offline":
-      return "You appear to be offline. Check your connection and try again.";
+      return NO_RESPONSE_MESSAGE;
     case "error":
       return result.message;
     default:
@@ -74,13 +75,8 @@ export function useLogin() {
 
     if (result.kind === "success") {
       dispatch(signedIn(result.staff));
-      router.replace(
-        destinationAfterLogin({
-          role: result.staff.role,
-          usedEmail: staffIdOrEmail.includes("@"),
-          redirect: searchParams.get("redirect"),
-        }),
-      );
+      // Always into the attendance app. Admins have their own sign-in page.
+      router.replace(staffDestination(searchParams.get("redirect")));
       return;
     }
 

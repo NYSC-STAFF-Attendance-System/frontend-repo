@@ -1,14 +1,14 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { AdminGuard } from "@/components/auth-provider"
 import { LoadingState } from "@/components/states"
-import { AdminShell } from "./_components/admin-shell"
+import { AdminArea } from "./_components/admin-area"
 
 /**
  * Admin lives under `/admin/*` so printed office QR posters can keep `/scan`
  * forever. Staff never share this tree: `AdminGuard` sends signed-out visitors
- * to login, and uninvited staff get a 404 (the dashboard is not advertised).
+ * to /admin/login, and uninvited staff get a 404 (the dashboard is not
+ * advertised). `AdminArea` leaves /admin/login itself unguarded.
  *
  * Pages in this folder own content only. Chrome (sidebar, header, mobile drawer)
  * is `AdminShell`. Filters that should be shareable live in the query string via
@@ -30,9 +30,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
         </div>
       }
     >
-      <AdminGuard>
-        <AdminShell>{children}</AdminShell>
-      </AdminGuard>
+      <AdminArea>{children}</AdminArea>
     </Suspense>
   )
 }

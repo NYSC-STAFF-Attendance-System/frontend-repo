@@ -327,6 +327,7 @@ export function SettingsPanel() {
             </div>
             <Button
               render={<Link href="/admin/settings/office-qr" />}
+              nativeButton={false}
               variant="outline"
               className="mt-5 h-11 w-full rounded-xl border-line"
             >
