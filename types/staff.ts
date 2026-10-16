@@ -47,7 +47,10 @@ export type StaffProfile = {
 export type StaffLookupResult = {
   staffId: string;
   fullName: string;
-  officeName: string;
-  /** True if this record has already been claimed, so registration stops here. */
-  alreadyRegistered: boolean;
+  /**
+   * Null because the backend lookup returns names only, no office. The confirm
+   * step hides the row rather than showing a blank. Kept in the type so it
+   * appears automatically if the backend starts returning it.
+   */
+  officeName: string | null;
 };

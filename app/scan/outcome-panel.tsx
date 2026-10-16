@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_RESPONSE_TITLE } from "@/lib/messages";
 import { CheckCircle2, Clock, MapPinOff, ShieldAlert, WifiOff, XCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -202,9 +203,11 @@ function describe(outcome: AttendanceOutcome): Description {
       return {
         tone: "failure",
         icon: <WifiOff aria-hidden="true" className="size-8" />,
-        title: "You are offline",
+        title: NO_RESPONSE_TITLE,
+        // "Nothing was recorded" matters most here: without it, someone at
+        // the office door cannot tell whether they are signed in or not.
         message:
-          "Attendance could not be sent, so nothing was recorded. Reconnect and try again.",
+          "Attendance could not be sent, so nothing was recorded. Check your connection and try again.",
         retryLabel: "Try again",
       };
 

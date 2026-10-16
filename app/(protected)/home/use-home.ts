@@ -18,7 +18,7 @@ function toState(result: TodayResult): State {
     name: "error",
     message:
       result.kind === "offline"
-        ? "You appear to be offline. Your attendance is still safe on the server."
+        ? "We couldn't reach the server. Your attendance is not affected. Try again shortly."
         : result.message,
   };
 }

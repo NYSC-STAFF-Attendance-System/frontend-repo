@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_RESPONSE_MESSAGE } from "@/lib/messages";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/lib/api";
@@ -67,7 +68,7 @@ function messageFor(
     case "expired_token":
       return "That link has expired. Request a new one from the sign in page.";
     case "offline":
-      return "You appear to be offline. Check your connection and try again.";
+      return NO_RESPONSE_MESSAGE;
     case "error":
       return result.message;
     default:

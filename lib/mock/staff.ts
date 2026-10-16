@@ -33,7 +33,7 @@ export const mockStaff: StaffProfile = {
  */
 export const mockBannedStaff: StaffProfile = {
   ...mockStaff,
-  staffId: "NYSC/FCT/0619",
+  staffId: "0619",
   fullName: "Amina Bello",
   email: "a.bello@nysc.gov.ng",
   accountStatus: "banned",
@@ -44,7 +44,7 @@ export const mockBannedStaff: StaffProfile = {
  * Already invited and verified. Signs into /admin with email + MOCK_ADMIN_PASSWORD.
  */
 export const mockAdmin: StaffProfile = {
-  staffId: "NYSC/FCT/0101",
+  staffId: "0101",
   fullName: "Ibrahim Bello",
   email: "i.bello@nysc.gov.ng",
   rank: "State Coordinator",
@@ -58,7 +58,7 @@ export const mockAdmin: StaffProfile = {
 
 /** Sends admin invites. Same password as mockAdmin. */
 export const mockSuperAdmin: StaffProfile = {
-  staffId: "NYSC/FCT/0001",
+  staffId: "0001",
   fullName: "Ngozi Adeyemi",
   email: "super.admin@nysc.gov.ng",
   rank: "Director, ICT",
@@ -85,20 +85,20 @@ export function isAdminRole(role: StaffProfile["role"]): boolean {
  * Staff records an admin has created but nobody has claimed yet. Step one of
  * /register looks up against this list.
  *
- * Note the deliberate second entry: a record that has already been claimed, so
- * the "this staff ID is already registered" branch has something to hit.
+ * officeName is null to match the real lookup, which returns names only. That
+ * way the mock exercises the same screen the backend will produce.
  */
 export const mockLookupResults: StaffLookupResult[] = [
   {
-    staffId: "NYSC/FCT/0842",
+    staffId: "0842",
     fullName: "Chinedu Ibrahim",
-    officeName: mockOffice.name,
-    alreadyRegistered: false,
-  },
-  {
-    staffId: "NYSC/FCT/0619",
-    fullName: "Amina Bello",
-    officeName: mockOffice.name,
-    alreadyRegistered: true,
+    officeName: null,
   },
 ];
+
+/**
+ * Records that have already been claimed, so the "this staff ID is already
+ * registered" branch has something to hit. Kept as a separate list because the
+ * backend reports these as a refusal, not as a record with a flag on it.
+ */
+export const mockClaimedStaffIds: string[] = ["0619"];
