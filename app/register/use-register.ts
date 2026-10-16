@@ -34,7 +34,9 @@ export function useRegister() {
       if (step.name === "confirm") setStep({ name: "details", staff: step.staff });
     },
     onBack: () => setStep({ name: "lookup" }),
-    onRegistered: (email: string) =>
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`),
+    onRegistered: ({ email, staffId }: { email: string; staffId: string }) =>
+      router.push(
+        `/verify-email?email=${encodeURIComponent(email)}&staff=${encodeURIComponent(staffId)}`,
+      ),
   };
 }

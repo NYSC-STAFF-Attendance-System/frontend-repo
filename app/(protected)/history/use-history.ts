@@ -33,7 +33,7 @@ function toState(result: HistoryResult): State {
     name: "error",
     message:
       result.kind === "offline"
-        ? "You appear to be offline. Your records are safe on the server."
+        ? "We couldn't reach the server. Your records are not affected. Try again shortly."
         : result.message,
   };
 }

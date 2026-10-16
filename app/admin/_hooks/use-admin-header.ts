@@ -78,7 +78,8 @@ export function useAdminHeader() {
   async function handleSignOut() {
     setSigningOut(true);
     await dispatch(signOut());
-    router.replace("/login");
+    // Back to the dashboard's own sign-in, not the staff one.
+    router.replace("/admin/login");
   }
 
   return {

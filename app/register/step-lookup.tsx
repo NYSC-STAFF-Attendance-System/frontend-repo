@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_RESPONSE_MESSAGE } from "@/lib/messages";
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,10 @@ export function StepLookup({ onFound }: { onFound: (staff: StaffLookupResult) =>
         value={staffId}
         onChange={(event) => setStaffId(event.target.value)}
         error={fieldError}
-        hint="The file number your office issued you, for example NYSC/FCT/0842."
+        hint="The file number your office issued you, for example 0842."
+        // The backend rejects staff IDs longer than 6 characters. Capping the
+        // input stops someone typing a longer one and getting a confusing error.
+        maxLength={6}
         autoCapitalize="characters"
         autoCorrect="off"
         disabled={submitting}
@@ -56,7 +60,7 @@ function renderFailure(failure: LookupFailure) {
     case "already_registered":
       return (
         <>
-          {failure.staff.staffId} has already been registered.{" "}
+          {failure.staffId} has already been registered.{" "}
           <Link href="/login" className="underline underline-offset-4">
             Sign in instead
           </Link>
@@ -64,7 +68,7 @@ function renderFailure(failure: LookupFailure) {
         </>
       );
     case "offline":
-      return "You appear to be offline. Check your connection and try again.";
+      return NO_RESPONSE_MESSAGE;
     case "error":
       return failure.message;
     default:

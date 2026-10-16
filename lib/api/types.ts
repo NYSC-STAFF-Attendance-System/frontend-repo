@@ -44,6 +44,20 @@ export type ApiClient = {
   };
 
   admin: {
+    /**
+     * Dashboard sign-in. Email and password only, with no device ID.
+     *
+     * Separate from auth.login because the backend has a separate admin login
+     * (POST /api/auth/login/) that does not check the device. Sending admins
+     * through the staff login would block anyone signing in from a computer
+     * that is not their registered phone.
+     *
+     * Returns the same LoginResult as staff login for now, so the signed-in
+     * person lands in the same place in the app. That changes when admin and
+     * staff sessions are stored separately.
+     */
+    login(input: { email: string; password: string }): Promise<LoginResult>;
+
     /** Super admin only. Sends an invite link to an existing staff email. */
     inviteAdmin(email: string): Promise<InviteAdminResult>;
 
@@ -70,7 +84,9 @@ export type ApiClient = {
     }): Promise<RegisterResult>;
 
     verifyEmail(token: string): Promise<VerifyEmailResult>;
-    resendVerification(email: string): Promise<PasswordResetRequestResult>;
+
+    /** Takes the staff ID, not the email - that is what the backend accepts. */
+    resendVerification(staffId: string): Promise<PasswordResetRequestResult>;
   };
 
   password: {

@@ -22,7 +22,12 @@ export type LoginResult =
 export type StaffLookupOutcome =
   | { kind: "found"; staff: StaffLookupResult }
   | { kind: "not_found" }
-  | { kind: "already_registered"; staff: StaffLookupResult }
+  /**
+   * Carries only the ID the person typed. The backend reports an already
+   * claimed record as an error, so there is no record to show - and showing
+   * one would tell a stranger whose ID it is.
+   */
+  | { kind: "already_registered"; staffId: string }
   | { kind: "offline" }
   | { kind: "error"; message: string };
 
