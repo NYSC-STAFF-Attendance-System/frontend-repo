@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AdminGuard } from "@/components/auth-provider";
+import { SnackbarProvider } from "@/components/snackbar";
 import { AdminShell } from "./admin-shell";
 
 /**
@@ -19,11 +20,14 @@ import { AdminShell } from "./admin-shell";
 export function AdminArea({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname === "/admin/login") return children;
+  const body =
+    pathname === "/admin/login" ? (
+      children
+    ) : (
+      <AdminGuard>
+        <AdminShell>{children}</AdminShell>
+      </AdminGuard>
+    );
 
-  return (
-    <AdminGuard>
-      <AdminShell>{children}</AdminShell>
-    </AdminGuard>
-  );
+  return <SnackbarProvider>{body}</SnackbarProvider>;
 }

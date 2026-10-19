@@ -1,4 +1,12 @@
 import type {
+  AdminAttendanceListResult,
+  AdminAttendanceQuery,
+  AdminExportResult,
+  AdminOfficeListResult,
+  AdminOfficeResult,
+  AdminStaffListResult,
+  SeedStaffInput,
+  SeedStaffResult,
   AttendanceOutcome,
   ChangePasswordResult,
   Coordinates,
@@ -58,16 +66,56 @@ export type ApiClient = {
      */
     login(input: { email: string; password: string }): Promise<LoginResult>;
 
-    /** Super admin only. Sends an invite link to an existing staff email. */
-    inviteAdmin(email: string): Promise<InviteAdminResult>;
+    /**
+     * Super admin only. POST /api/invites/ with the name and office the
+     * invitee will belong to. The server sends the email.
+     */
+    inviteAdmin(input: {
+      email: string;
+      firstName: string;
+      surname: string;
+      officeId: string;
+    }): Promise<InviteAdminResult>;
 
     /** Public. Following the invite email upgrades that staff to admin. */
     verifyAdminInvite(token: string): Promise<VerifyAdminInviteResult>;
 
+    /** GET /api/staff/ — every staff row this admin is allowed to see. */
+    listStaff(): Promise<AdminStaffListResult>;
+
+    /**
+     * POST /api/staff/seed-staff/. One pending registration. A CSV upload
+     * calls this once per row.
+     */
+    seedStaff(input: SeedStaffInput): Promise<SeedStaffResult>;
+
+    /** GET /api/offices/ — superuser. Office admins receive forbidden. */
+    listOffices(): Promise<AdminOfficeListResult>;
+
+    /**
+     * One office. Superuser passes an id (GET /api/offices/{id}/). An office
+     * admin omits it and hits GET /api/offices/me/.
+     */
+    getOffice(officeId?: string): Promise<AdminOfficeResult>;
+
+    /** PATCH radius_meters. The only settings field the API stores. */
+    updateOfficeRadius(input: {
+      officeId?: string;
+      radiusMeters: number;
+    }): Promise<AdminOfficeResult>;
+
     /** The printed station QR staff scan to open /scan. */
-    getOfficeQr(): Promise<OfficeQrResult>;
+    getOfficeQr(officeId?: string): Promise<OfficeQrResult>;
     setOfficeQrAccepting(accepting: boolean): Promise<OfficeQrResult>;
-    regenerateOfficeQr(): Promise<OfficeQrResult>;
+    regenerateOfficeQr(officeId?: string): Promise<OfficeQrResult>;
+
+    /** GET /api/attendance/admin/list/ */
+    listAttendance(query: AdminAttendanceQuery): Promise<AdminAttendanceListResult>;
+
+    /** GET /api/attendance/admin/reports/?format=csv|xlsx */
+    exportAttendance(
+      query: AdminAttendanceQuery & { format: "csv" | "xlsx" },
+    ): Promise<AdminExportResult>;
   };
 
   registration: {

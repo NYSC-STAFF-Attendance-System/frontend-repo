@@ -1,12 +1,12 @@
+"use client"
+
 import { ArrowRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { weeklyTrend } from "../_data"
-
-const PLOT_HEIGHT = 184
-const SCALE_MAX = 210
+import { useWeeklyTrend } from "../_hooks/use-weekly-trend"
 
 export function WeeklyTrend() {
+  const days = useWeeklyTrend()
   return (
     <section className="rounded-[20px] border border-line/80 bg-white px-4 pt-5 pb-10 sm:px-6 sm:pt-6 sm:pb-16">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -40,10 +40,7 @@ export function WeeklyTrend() {
         </div>
 
         <div className="relative flex h-49 items-end">
-          {weeklyTrend.map((day, index) => {
-            const isToday = index === weeklyTrend.length - 1
-            const barHeight = (day.value / SCALE_MAX) * PLOT_HEIGHT
-
+          {days.map((day) => {
             return (
               <div
                 key={day.label}
@@ -55,9 +52,9 @@ export function WeeklyTrend() {
                 <div
                   className={cn(
                     "w-15 rounded-t-2 sm:w-18",
-                    isToday ? "bg-nysc-mid" : "bg-nysc-green"
+                    day.isToday ? "bg-nysc-mid" : "bg-nysc-green"
                   )}
-                  style={{ height: `${barHeight}px` }}
+                  style={{ height: `${day.barHeight}px` }}
                 />
               </div>
             )
@@ -66,15 +63,13 @@ export function WeeklyTrend() {
       </div>
 
       <div className="mt-3.5 flex px-4 sm:px-8">
-        {weeklyTrend.map((day, index) => {
-          const isToday = index === weeklyTrend.length - 1
-
+        {days.map((day) => {
           return (
             <p
               key={day.label}
               className={cn(
                 "min-w-0 flex-1 text-center text-[11px] whitespace-nowrap sm:text-[13px]",
-                isToday
+                day.isToday
                   ? "font-semibold text-nysc-mid"
                   : "font-medium text-slate"
               )}

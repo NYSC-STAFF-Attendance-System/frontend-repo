@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import { X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -19,14 +18,6 @@ export function KioskView({
   active: boolean
   onClose: () => void
 }) {
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
-
   return (
     <div className="fixed inset-0 z-60 flex flex-col items-center justify-center bg-nysc-soft px-6 print:hidden">
       <Button

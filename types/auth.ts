@@ -49,9 +49,9 @@ export type VerifyEmailResult =
   | { kind: "offline" }
   | { kind: "error"; message: string };
 
-/** Super admin invites an existing staff member to the admin dashboard. */
+/** Super admin invites someone to the admin dashboard for one office. */
 export type InviteAdminResult =
-  | { kind: "sent"; email: string; inviteUrl: string }
+  | { kind: "sent"; email: string; message: string }
   | { kind: "not_staff" }
   | { kind: "already_admin" }
   | { kind: "forbidden" }

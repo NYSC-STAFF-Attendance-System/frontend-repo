@@ -19,14 +19,8 @@ import { FilterSelect } from "@/app/admin/_components/filter-select";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import {
-  dateRanges,
-  departmentOptions,
-  locationOptions,
-  statusOptions,
-  type AttendanceRecord,
-  type AttendanceStatus,
-} from "../_data";
+import { LoadingState } from "@/components/states";
+import { dateRanges, type AttendanceRecord, type AttendanceStatus } from "../_data";
 import { useAttendanceReports } from "../_hooks/use-attendance-reports";
 
 const periods = [
@@ -36,26 +30,6 @@ const periods = [
   { value: "Monthly", label: "Monthly" },
   { value: "Exceptions", label: "Exceptions" },
 ] as const;
-
-const gpsOptions = [
-  { value: "all", label: "All GPS" },
-  { value: "match", label: "Inside fence" },
-  { value: "outside", label: "Outside radius" },
-];
-
-const reportTypeOptions = [
-  { value: "All Records (Standard)", label: "All records" },
-  { value: "Daily Summary", label: "Daily summary" },
-  { value: "Exception Report", label: "Exception report" },
-];
-
-const statusLabel: Record<AttendanceStatus, string> = {
-  present: "Present",
-  late: "Late",
-  absent: "Absent",
-  "checked-out": "Checked Out",
-  incomplete: "Incomplete",
-};
 
 const statusClass: Record<AttendanceStatus, string> = {
   present: "bg-emerald-50 text-nysc",
@@ -102,52 +76,26 @@ function ProfileAvatar({ record }: { record: AttendanceRecord }) {
 
 export function AttendanceReports() {
   const {
-    reportType,
     period,
     dateRange,
-    department,
-    location,
-    status,
     query,
-    gpsFilter,
-    filtered,
+    loading,
+    loadError,
     visible,
+    total,
     currentPage,
     pageCount,
     showingFrom,
     showingTo,
-    setReportType,
+    chips,
+    pageItems,
     setPeriod,
     setDateRange,
-    setDepartment,
-    setLocation,
-    setStatus,
     setQuery,
-    setGpsFilter,
     setPage,
     resetFilters,
     exportData,
   } = useAttendanceReports();
-
-  const pageItems = pageNumbers(currentPage, pageCount);
-  const chips = activeFilterChips({
-    reportType,
-    period,
-    dateRange,
-    department,
-    location,
-    status,
-    query,
-    gpsFilter,
-    setReportType,
-    setPeriod,
-    setDateRange,
-    setDepartment,
-    setLocation,
-    setStatus,
-    setQuery,
-    setGpsFilter,
-  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -160,13 +108,23 @@ export function AttendanceReports() {
             Search a person, then narrow by time, place, or GPS.
           </p>
         </div>
-        <Button
-          onClick={exportData}
-          className="h-11 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90"
-        >
-          <Download data-icon="inline-start" className="size-4" />
-          Export Data
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void exportData("xlsx")}
+            className="h-11 rounded-xl border-zinc-200 bg-white px-4 text-zinc-700"
+          >
+            <Download data-icon="inline-start" className="size-4" />
+            Excel
+          </Button>
+          <Button
+            onClick={() => void exportData("csv")}
+            className="h-11 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90"
+          >
+            <Download data-icon="inline-start" className="size-4" />
+            CSV
+          </Button>
+        </div>
       </div>
 
       <section className="rounded-[20px] border border-zinc-200/80 bg-white">
@@ -176,9 +134,9 @@ export function AttendanceReports() {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search name or staff ID"
+              placeholder="Staff ID"
               className="h-10 rounded-full border-zinc-200 pl-10 text-sm shadow-none"
-              aria-label="Search name or staff ID"
+              aria-label="Staff ID"
             />
           </label>
 
@@ -201,64 +159,22 @@ export function AttendanceReports() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-            <div className="min-w-0">
-              <FilterSelect
-                value={reportType}
-                options={reportTypeOptions}
-                aria-label="Report type"
-                onChange={(value) => setReportType(value)}
-              />
-            </div>
-            <div className="min-w-0">
-              <FilterSelect
-                value={dateRange}
-                options={[...dateRanges]}
-                aria-label="Date range"
-                onChange={setDateRange}
-              />
-            </div>
-            <div className="min-w-0">
-              <FilterSelect
-                value={department}
-                options={[...departmentOptions]}
-                aria-label="Department"
-                onChange={setDepartment}
-              />
-            </div>
-            <div className="min-w-0">
-              <FilterSelect
-                value={location}
-                options={[...locationOptions]}
-                aria-label="Office location"
-                onChange={setLocation}
-              />
-            </div>
-            <div className="min-w-0">
-              <FilterSelect
-                value={status}
-                options={[...statusOptions]}
-                aria-label="Attendance status"
-                onChange={setStatus}
-              />
-            </div>
-            <div className="min-w-0">
-              <FilterSelect
-                value={gpsFilter}
-                options={[...gpsOptions]}
-                aria-label="GPS"
-                onChange={setGpsFilter}
-              />
-            </div>
+          <div className="max-w-xs">
+            <FilterSelect
+              value={dateRange}
+              options={[...dateRanges]}
+              aria-label="Date range"
+              onChange={setDateRange}
+            />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
               <p className="mr-1 text-sm text-zinc-500">
                 <span className="font-semibold text-zinc-800">
-                  {filtered.length}
+                  {total}
                 </span>{" "}
-                {filtered.length === 1 ? "record" : "records"}
+                {total === 1 ? "record" : "records"}
               </p>
               {chips.map((chip) => (
                 <button
@@ -297,7 +213,7 @@ export function AttendanceReports() {
                   Staff ID
                 </th>
                 <th className="px-3 py-3 font-semibold sm:px-4">
-                  Department &amp; Location
+                  Office &amp; state
                 </th>
                 <th className="px-3 py-3 font-semibold sm:px-4">Date</th>
                 <th className="px-3 py-3 font-semibold sm:px-4">Check-In</th>
@@ -309,13 +225,19 @@ export function AttendanceReports() {
               </tr>
             </thead>
             <tbody>
-              {visible.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-3 py-10 sm:px-4">
+                    <LoadingState label="Loading attendance" />
+                  </td>
+                </tr>
+              ) : visible.length === 0 ? (
                 <tr>
                   <td
                     colSpan={8}
                     className="px-3 py-16 text-center text-sm text-zinc-400 sm:px-4"
                   >
-                    No attendance records match these filters.
+                    {loadError ?? "No attendance records match these filters."}
                   </td>
                 </tr>
               ) : (
@@ -326,7 +248,7 @@ export function AttendanceReports() {
                   >
                     <td className="px-3 py-4 whitespace-nowrap sm:px-4">
                       <Link
-                        href={`/admin/attendance/${record.id}/correct`}
+                        href={`/admin/attendance/${record.id}`}
                         className="flex items-center gap-3"
                       >
                         <ProfileAvatar record={record} />
@@ -387,7 +309,7 @@ export function AttendanceReports() {
                           statusClass[record.status],
                         )}
                       >
-                        {statusLabel[record.status]}
+                        {record.statusLabel}
                       </span>
                     </td>
                     <td className="px-3 py-4 text-right sm:px-4">
@@ -417,7 +339,7 @@ export function AttendanceReports() {
             to <span className="font-semibold text-zinc-700">{showingTo}</span>{" "}
             of{" "}
             <span className="font-semibold text-zinc-700">
-              {filtered.length}
+              {total}
             </span>{" "}
             entries
           </p>
@@ -472,114 +394,4 @@ export function AttendanceReports() {
       </section>
     </div>
   );
-}
-
-type FilterChip = { id: string; label: string; onClear: () => void };
-
-function activeFilterChips({
-  reportType,
-  period,
-  dateRange,
-  department,
-  location,
-  status,
-  query,
-  gpsFilter,
-  setReportType,
-  setPeriod,
-  setDateRange,
-  setDepartment,
-  setLocation,
-  setStatus,
-  setQuery,
-  setGpsFilter,
-}: {
-  reportType: string;
-  period: string;
-  dateRange: string;
-  department: string;
-  location: string;
-  status: string;
-  query: string;
-  gpsFilter: string;
-  setReportType: (value: string) => void;
-  setPeriod: (value: string) => void;
-  setDateRange: (value: string) => void;
-  setDepartment: (value: string) => void;
-  setLocation: (value: string) => void;
-  setStatus: (value: string) => void;
-  setQuery: (value: string) => void;
-  setGpsFilter: (value: string) => void;
-}): FilterChip[] {
-  const needle = query.trim();
-  const chips: Array<FilterChip | null> = [
-    needle
-      ? { id: "q", label: `“${needle}”`, onClear: () => setQuery("") }
-      : null,
-    reportType !== "All Records (Standard)"
-      ? {
-          id: "type",
-          label: reportType,
-          onClear: () => setReportType("All Records (Standard)"),
-        }
-      : null,
-    period !== "All"
-      ? { id: "period", label: period, onClear: () => setPeriod("All") }
-      : null,
-    dateRange !== "Last 7 Days"
-      ? {
-          id: "date",
-          label: dateRange,
-          onClear: () => setDateRange("Last 7 Days"),
-        }
-      : null,
-    department !== "All Departments"
-      ? {
-          id: "dept",
-          label: department,
-          onClear: () => setDepartment("All Departments"),
-        }
-      : null,
-    location !== "All Locations"
-      ? {
-          id: "loc",
-          label: location,
-          onClear: () => setLocation("All Locations"),
-        }
-      : null,
-    status !== "All Statuses"
-      ? {
-          id: "status",
-          label: status,
-          onClear: () => setStatus("All Statuses"),
-        }
-      : null,
-    gpsFilter !== "all"
-      ? {
-          id: "gps",
-          label: gpsFilter === "outside" ? "Outside radius" : "Inside fence",
-          onClear: () => setGpsFilter("all"),
-        }
-      : null,
-  ];
-  return chips.filter((chip): chip is FilterChip => chip !== null);
-}
-
-function pageNumbers(
-  current: number,
-  total: number,
-): Array<number | "ellipsis"> {
-  if (total <= 5) {
-    return Array.from({ length: total }, (_, index) => index + 1);
-  }
-
-  if (current <= 3) {
-    return [1, 2, 3, "ellipsis", total];
-  }
-
-  if (current >= total - 2) {
-    return [1, "ellipsis", total - 2, total - 1, total];
-  }
-
-  return [1, "ellipsis", current, "ellipsis", total];
 }

@@ -5,6 +5,7 @@
  * "@/types" - instead of one import per file. If a type later moves between
  * files, this is the only place that changes.
  */
+export * from "./admin";
 export * from "./department";
 export * from "./office";
 export * from "./office-qr";

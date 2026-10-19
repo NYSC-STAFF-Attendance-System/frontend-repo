@@ -1,3 +1,4 @@
+import Link from "next/link"
 import {
   ArrowUpRight,
   BadgeCheck,
@@ -64,10 +65,13 @@ const cards = [
     label: "Approvals",
     value: "12",
     hint: (
-      <span className="inline-flex items-center gap-1 font-medium text-nysc-green">
+      <Link
+        href="/admin/staff"
+        className="inline-flex items-center gap-1 font-medium text-nysc-green hover:underline"
+      >
         Review requests
         <ArrowUpRight className="size-3.5" />
-      </span>
+      </Link>
     ),
     icon: BadgeCheck,
     iconClass: "bg-mint text-nysc-green",
@@ -77,7 +81,7 @@ const cards = [
 
 export function StatCards() {
   return (
-    <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+    <section className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
       {cards.map((card) => {
         const Icon = card.icon
         return (
@@ -86,12 +90,12 @@ export function StatCards() {
             className="rounded-2xl border border-line/80 bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:p-4"
           >
             <div className="mb-4 flex items-start justify-between gap-2">
-              <p className="text-[11px] font-semibold tracking-[0.08em] text-olive-muted uppercase">
+              <p className="min-w-0 text-[11px] leading-4 font-semibold tracking-[0.08em] text-olive-muted uppercase">
                 {card.label}
               </p>
               <span
                 className={cn(
-                  "flex size-8 items-center justify-center rounded-lg",
+                  "flex size-8 shrink-0 items-center justify-center rounded-lg",
                   card.iconClass
                 )}
               >
@@ -100,7 +104,7 @@ export function StatCards() {
             </div>
             <p
               className={cn(
-                "text-[26px] leading-none font-semibold tracking-tight sm:text-[32px]",
+                "text-[26px] leading-none font-semibold tracking-tight tabular-nums sm:text-[32px]",
                 card.valueClass
               )}
             >

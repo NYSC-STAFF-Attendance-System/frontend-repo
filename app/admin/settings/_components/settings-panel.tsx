@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { cutoffFrom, useSettings } from "../_hooks/use-settings";
+import { useSettings } from "../_hooks/use-settings";
 
 const graceOptions = [
   { value: "0", label: "0 minutes" },
@@ -38,17 +38,23 @@ const accuracyOptions = [
   { value: "30", label: "30 meters" },
 ];
 
-function formatClock(value: string) {
-  const [hours, minutes] = value.split(":").map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return value;
-  const mer = hours >= 12 ? "PM" : "AM";
-  const hour = hours % 12 || 12;
-  return `${String(hour).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${mer}`;
-}
-
 export function SettingsPanel() {
-  const { settings, lastSync, dirty, cutoff, patch, save, reset } =
-    useSettings();
+  const {
+    settings,
+    lastSync,
+    dirty,
+    cutoff,
+    barredAfter,
+    checkInWindow,
+    checkOutWindow,
+    offices,
+    officeId,
+    chooseOffice,
+    saving,
+    patch,
+    save,
+    reset,
+  } = useSettings();
 
   return (
     <div className="flex flex-col gap-5">
@@ -68,12 +74,12 @@ export function SettingsPanel() {
           </p>
           <Button
             type="button"
-            disabled={!dirty}
-            onClick={save}
+            disabled={!dirty || saving}
+            onClick={() => void save()}
             className="h-11 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90"
           >
             <Save data-icon="inline-start" className="size-4" />
-            Save Changes
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -92,7 +98,8 @@ export function SettingsPanel() {
                   </h2>
                   <p className="mt-1 text-sm text-zinc-400">
                     Standard duty hours and threshold rules for daily staff
-                    logs.
+                    logs. Resumption, closing, and grace are not stored on the
+                    server. Save writes the office radius only.
                   </p>
                 </div>
               </div>
@@ -140,7 +147,7 @@ export function SettingsPanel() {
               <p className="mt-1 text-sm leading-6 text-zinc-500">
                 Staff arriving after the configured resumption time ({cutoff}{" "}
                 including {settings.grace}-minute grace) are classified as Late.
-                Arrivals past {cutoffFrom(settings.resumption, "90")} are barred
+                Arrivals past {barredAfter} are barred
                 from routine Check-In and need an Administrative Correction
                 Form.
               </p>
@@ -155,14 +162,14 @@ export function SettingsPanel() {
                   icon={LogIn}
                   period="Period 01"
                   title="Morning Check In"
-                  window={`Authorized ${formatClock(addMinutes(settings.resumption, -60))} — ${formatClock(addMinutes(settings.resumption, 90))}`}
+                  window={checkInWindow}
                   note="Validates prompt arrival for Secretariat muster roll."
                 />
                 <PeriodCard
                   icon={LogOut}
                   period="Period 02"
                   title="Evening Check Out"
-                  window={`Authorized ${formatClock(addMinutes(settings.closing, -30))} — ${formatClock(addMinutes(settings.closing, 60))}`}
+                  window={checkOutWindow}
                   note="Validates full shift completion before dismissal."
                 />
               </div>
@@ -281,6 +288,25 @@ export function SettingsPanel() {
               </fieldset>
 
               <div className="mt-5">
+                {offices.length > 1 ? (
+                  <div className="mb-4">
+                    <Label className="text-[10px] font-semibold tracking-[0.14em] text-zinc-400 uppercase">
+                      Office
+                    </Label>
+                    <div className="mt-2">
+                      <FilterSelect
+                        aria-label="Office"
+                        value={officeId}
+                        onChange={chooseOffice}
+                        options={offices.map((office) => ({
+                          value: office.id,
+                          label: office.name,
+                        }))}
+                        className="h-10 rounded-xl"
+                      />
+                    </div>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-3">
                   <Label className="text-[10px] font-semibold tracking-[0.14em] text-zinc-400 uppercase">
                     Office Perimeter Radius
@@ -396,25 +422,17 @@ export function SettingsPanel() {
           </Button>
           <Button
             type="button"
-            disabled={!dirty}
-            onClick={save}
+            disabled={!dirty || saving}
+            onClick={() => void save()}
             className="h-11 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90"
           >
             <Save data-icon="inline-start" className="size-4" />
-            Save Changes
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
     </div>
   );
-}
-
-function addMinutes(value: string, delta: number) {
-  const [hours, minutes] = value.split(":").map(Number);
-  const total = (hours * 60 + minutes + delta + 24 * 60) % (24 * 60);
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 function TimeField({

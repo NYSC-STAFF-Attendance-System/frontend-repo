@@ -22,11 +22,11 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  getAttendanceDetail,
   type AttendanceRecord,
   type AttendanceStatus,
   type VerificationFlag,
 } from "../_data";
+import { useAttendanceDetails } from "../_hooks/use-attendance-details";
 
 const statusLabel: Record<AttendanceStatus, string> = {
   present: "Present",
@@ -79,12 +79,6 @@ function ProfilePhoto({ record }: { record: AttendanceRecord }) {
   );
 }
 
-function splitClock(value: string | null) {
-  if (!value) return { time: "—", mer: "" };
-  const [time, mer] = value.split(" ");
-  return { time, mer: mer ?? "" };
-}
-
 function FlagCard({ flag }: { flag: VerificationFlag }) {
   const Icon =
     flag.title === "Trusted Device"
@@ -121,9 +115,7 @@ function FlagCard({ flag }: { flag: VerificationFlag }) {
 }
 
 export function AttendanceDetails({ record }: { record: AttendanceRecord }) {
-  const detail = getAttendanceDetail(record);
-  const checkIn = splitClock(record.checkIn);
-  const checkOut = splitClock(record.checkOut);
+  const { detail, checkIn, checkOut } = useAttendanceDetails(record);
 
   return (
     <div className="flex flex-col gap-6">

@@ -308,7 +308,7 @@ export const mockApi: ApiClient = {
       return { kind: "success", staff: profile };
     },
 
-    async inviteAdmin(email) {
+    async inviteAdmin({ email }) {
       await wait();
       const actor = currentProfile();
       if (!actor || actor.role !== "super_admin") return { kind: "forbidden" };
@@ -322,12 +322,33 @@ export const mockApi: ApiClient = {
       invites[token] = target.staffId;
       writeStore(INVITES_KEY, invites);
 
-      const origin = typeof window === "undefined" ? "" : window.location.origin;
       return {
         kind: "sent",
         email: target.email,
-        inviteUrl: `${origin}/invite-admin?token=${token}`,
+        message: "Invite sent.",
       };
+    },
+
+    async listStaff() {
+      return { kind: "error", message: "The live API is not connected yet." };
+    },
+    async seedStaff() {
+      return { kind: "error", message: "The live API is not connected yet." };
+    },
+    async listOffices() {
+      return { kind: "error", message: "The live API is not connected yet." };
+    },
+    async getOffice() {
+      return { kind: "error", message: "The live API is not connected yet." };
+    },
+    async updateOfficeRadius() {
+      return { kind: "error", message: "The live API is not connected yet." };
+    },
+    async listAttendance() {
+      return { kind: "error", message: "The live API is not connected yet." };
+    },
+    async exportAttendance() {
+      return { kind: "error", message: "The live API is not connected yet." };
     },
 
     async verifyAdminInvite(token) {
