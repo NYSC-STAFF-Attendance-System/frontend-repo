@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Screen } from "@/components/screen";
 import { LoadingState } from "@/components/states";
 import { useStaff } from "@/hooks/use-staff";
-import { currentPath, isAdminRole, loginHref } from "@/lib/auth/redirect";
+import { adminLoginHref, currentPath, isAdminRole, loginHref } from "@/lib/auth/redirect";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { hydrateAuth } from "@/lib/store/slices/auth-slice";
 
@@ -64,8 +64,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 /**
  * Gate for /admin.
  *
- * Signed-out visitors are sent to login with a redirect back here.
- * Signed-in staff who were never invited still get a 404.
+ * Signed-out visitors are sent to /admin/login - not the staff /login, which
+ * checks the device and would refuse an admin on an office computer - with a
+ * redirect back here. Signed-in staff who were never invited still get a 404.
  */
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -82,7 +83,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (status === "idle" || status === "loading") return;
     if (!profile) {
-      router.replace(loginHref(currentPath(pathname, searchParams.toString() ? `?${searchParams}` : "")));
+      router.replace(adminLoginHref(currentPath(pathname, searchParams.toString() ? `?${searchParams}` : "")));
     }
   }, [pathname, profile, router, searchParams, status]);
 

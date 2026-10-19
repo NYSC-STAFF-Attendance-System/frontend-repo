@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_RESPONSE_TITLE } from "@/lib/messages";
 import { Camera, MapPin, QrCode } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -434,9 +435,9 @@ function describeResolution(
       };
     case "offline":
       return {
-        title: "You are offline",
+        title: NO_RESPONSE_TITLE,
         message:
-          "We could not check the office code. Reconnect and scan again.",
+          "We could not check the office code. Check your connection and scan again.",
       };
     case "error":
       return { title: "Something went wrong", message: resolution.message };

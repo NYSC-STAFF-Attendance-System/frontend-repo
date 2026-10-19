@@ -1,9 +1,10 @@
 "use client";
 
+import { NO_RESPONSE_TITLE } from "@/lib/messages";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Field } from "@/components/field";
 import { LoadingState } from "@/components/states";
-import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { assertNever } from "@/lib/utils";
 import type { VerifyEmailResult } from "@/types";
 import { useResendVerification, useVerifyEmail } from "./use-verify-email";
@@ -11,28 +12,26 @@ import { useResendVerification, useVerifyEmail } from "./use-verify-email";
 /**
  * Serves two arrivals with one implementation:
  *
- *   /verify-email?email=...   just registered, telling them to check the inbox
- *   /verify-email?token=...   followed the link in that email
+ *   /verify-email?email=…&staff=…   just registered, telling them to check the inbox
+ *   /verify-email?token=…           followed the link in that email
  *
  * Keeping both here means the wording about what to do next exists once.
  */
 export function VerifyEmailView() {
-  const { email, state } = useVerifyEmail();
+  const { email, staffId, state } = useVerifyEmail();
 
   if (state.name === "verifying") {
     return <LoadingState label="Confirming your email" />;
   }
 
   if (state.name === "awaiting_link") {
-    return <AwaitingLink email={email} />;
+    return <AwaitingLink email={email} staffId={staffId} />;
   }
 
-  return <Outcome result={state.result} email={email} />;
+  return <Outcome result={state.result} staffId={staffId} />;
 }
 
-function AwaitingLink({ email }: { email: string | null }) {
-  const { resending, resent, resend } = useResendVerification(email);
-
+function AwaitingLink({ email, staffId }: { email: string | null; staffId: string | null }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -54,18 +53,7 @@ function AwaitingLink({ email }: { email: string | null }) {
         <Button render={<Link href="/login" />} nativeButton={false} size="xl" className="w-full">
           Go to sign in
         </Button>
-
-        {email ? (
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={resend}
-            disabled={resending || resent}
-            className="w-full"
-          >
-            {resent ? "Link sent again" : resending ? "Sending..." : "Resend the link"}
-          </Button>
-        ) : null}
+        <ResendLink knownStaffId={staffId} variant="ghost" />
       </div>
 
       <p className="text-sm text-muted-foreground">
@@ -76,7 +64,7 @@ function AwaitingLink({ email }: { email: string | null }) {
   );
 }
 
-function Outcome({ result, email }: { result: VerifyEmailResult; email: string | null }) {
+function Outcome({ result, staffId }: { result: VerifyEmailResult; staffId: string | null }) {
   const { title, message, canResend } = describe(result);
 
   return (
@@ -91,18 +79,66 @@ function Outcome({ result, email }: { result: VerifyEmailResult; email: string |
           Go to sign in
         </Button>
 
-        {canResend && email ? (
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => api.registration.resendVerification(email)}
-            className="w-full"
-          >
-            Send a new link
-          </Button>
-        ) : null}
+        {/* Only where a fresh link would help. A verified account and an
+            offline phone both stay silent here. */}
+        {canResend ? <ResendLink knownStaffId={staffId} variant="outline" /> : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * The "send a new link" control.
+ *
+ * Just a button when the staff ID is known. A staff ID field and a button when
+ * it is not, which is the case for anyone arriving from an emailed link.
+ */
+function ResendLink({
+  knownStaffId,
+  variant,
+}: {
+  knownStaffId: string | null;
+  variant: "ghost" | "outline";
+}) {
+  const { staffId, setStaffId, needsStaffId, sending, sent, error, resend } =
+    useResendVerification(knownStaffId);
+
+  if (sent) {
+    return (
+      <p role="status" className="text-center text-sm text-muted-foreground">
+        A new link is on its way. Check your email.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={resend} noValidate className="flex flex-col gap-3">
+      {needsStaffId ? (
+        <Field
+          label="Staff ID"
+          name="staffId"
+          value={staffId}
+          onChange={(event) => setStaffId(event.target.value)}
+          error={error}
+          hint="Enter your staff ID and we will send a new link."
+          maxLength={6}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          disabled={sending}
+        />
+      ) : error ? (
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <Button type="submit" variant={variant} size="lg" disabled={sending} className="w-full">
+        {sending ? "Sending..." : "Send a new link"}
+      </Button>
+    </form>
   );
 }
 
@@ -134,12 +170,12 @@ function describe(result: VerifyEmailResult): {
       return {
         title: "That link is not valid",
         message:
-          "It may have been copied incompletely. Open the link directly from your email.",
+          "It may have been copied incompletely. Open the link directly from your email, or request a new one.",
         canResend: true,
       };
     case "offline":
       return {
-        title: "You appear to be offline",
+        title: NO_RESPONSE_TITLE,
         message: "Check your connection and open the link again.",
         canResend: false,
       };

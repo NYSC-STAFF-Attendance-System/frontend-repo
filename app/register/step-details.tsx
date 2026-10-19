@@ -18,7 +18,7 @@ export function StepDetails({
   onRegistered,
 }: {
   staff: StaffLookupResult;
-  onRegistered: (email: string) => void;
+  onRegistered: (registered: { email: string; staffId: string }) => void;
 }) {
   const {
     email,

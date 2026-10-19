@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_RESPONSE_TITLE } from "@/lib/messages";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/states";
@@ -59,7 +60,7 @@ function Outcome({ result }: { result: VerifyAdminInviteResult }) {
     case "offline":
       return (
         <OutcomeCopy
-          title="You appear to be offline"
+          title={NO_RESPONSE_TITLE}
           message="Check your connection and open the link again."
         />
       );
@@ -77,7 +78,7 @@ function OutcomeCopy({ title, message }: { title: string; message: string }) {
         <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
         <p className="text-sm text-muted-foreground">{message}</p>
       </div>
-      <Button render={<Link href="/login" />} size="xl" className="w-full">
+      <Button render={<Link href="/admin/login" />} nativeButton={false} size="xl" className="w-full">
         Go to sign in
       </Button>
     </div>

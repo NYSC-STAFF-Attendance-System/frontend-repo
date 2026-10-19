@@ -1,5 +1,6 @@
 "use client"
 
+import { NO_RESPONSE_MESSAGE } from "@/lib/messages"
 import { useInviteAdmin } from "../_hooks/use-invite-admin"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,7 +80,7 @@ function InviteResult({ result }: { result: InviteAdminResult }) {
     case "offline":
       return (
         <p role="alert" className="mt-3 text-sm text-red-600">
-          You appear to be offline. Try again.
+          {NO_RESPONSE_MESSAGE}
         </p>
       )
     case "error":

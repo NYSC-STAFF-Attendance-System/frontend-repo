@@ -83,7 +83,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 px-3 py-2.5">
       <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium wrap-break-words text-foreground">
+      <dd className="text-right font-medium wrap-break-word text-foreground">
         {value}
       </dd>
     </div>

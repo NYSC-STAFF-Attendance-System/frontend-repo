@@ -9,6 +9,7 @@ import {
   mockAccounts,
   mockAttendanceDays,
   mockAttendanceOutcomes,
+  mockClaimedStaffIds,
   mockLookupResults,
   mockOffice,
   mockOfficeQrStation,
@@ -24,22 +25,26 @@ import type { StaffProfile, StaffRole } from "@/types";
  *
  * DEMO INPUTS - how to reach each branch while building:
  *
- *   login
- *     NYSC/FCT/0842 + any password 8 chars or more   staff success (not admin)
- *     i.bello@nysc.gov.ng + NyscAdmin1               verified admin -> /admin
- *     super.admin@nysc.gov.ng + NyscAdmin1           super admin -> /admin
- *     NYSC/FCT/0619 + any password                   account_banned
+ *   staff login (/login)
+ *     0842 or its email + any password 8+ chars      success -> /home
+ *     0619 + any password                            account_banned
  *     any id + password "wrongdevice"                wrong_device
  *     any id + password "unverified"                 email_not_verified
  *     any id + password "offline"                    offline
  *     anything else                                  invalid_credentials
  *
+ *   admin login (/admin/login) - email only, no device
+ *     i.bello@nysc.gov.ng + NyscAdmin1               office admin -> /admin
+ *     super.admin@nysc.gov.ng + NyscAdmin1           super admin -> /admin
+ *     any email + password "offline"                 offline
+ *     a staff ID, or a non-admin email               invalid_credentials
+ *
  *   admin invite
  *     /invite-admin?token=admin_invite_ok            promotes Chinedu to admin
  *
  *   lookupStaffId
- *     NYSC/FCT/0842   found
- *     NYSC/FCT/0619   already_registered
+ *     0842   found
+ *     0619   already_registered
  *     anything else   not_found
  *
  *   resolveToken
@@ -258,17 +263,12 @@ export const mockApi: ApiClient = {
       if (!account) return { kind: "invalid_credentials" };
       if (account.accountStatus === "banned") return { kind: "account_banned" };
 
+      // Staff login only. Admins have their own sign-in at /admin/login, so an
+      // admin who also works as staff gets the attendance app here, never the
+      // dashboard.
+      if (password.length < 8) return { kind: "invalid_credentials" };
+
       const profile = withRole(account);
-      const usedEmail = staffIdOrEmail.includes("@");
-
-      // Email + admin password opens the dashboard. Staff ID (any 8+ chars)
-      // stays on the attendance app, even after the same person is invited.
-      if (usedEmail && isAdminRole(profile.role)) {
-        if (password !== MOCK_ADMIN_PASSWORD) return { kind: "invalid_credentials" };
-      } else if (password.length < 8) {
-        return { kind: "invalid_credentials" };
-      }
-
       setSignedInStaffId(profile.staffId);
       return { kind: "success", staff: profile };
     },
@@ -286,6 +286,28 @@ export const mockApi: ApiClient = {
   },
 
   admin: {
+    async login({ email, password }) {
+      await wait();
+
+      if (password === "offline") return { kind: "offline" };
+
+      // The dashboard signs in by email only, the way the real admin login
+      // does. A staff ID typed here is refused rather than looked up.
+      if (!email.includes("@")) return { kind: "invalid_credentials" };
+
+      const account = findAccount(email);
+      if (!account) return { kind: "invalid_credentials" };
+
+      const profile = withRole(account);
+      if (!isAdminRole(profile.role) || password !== MOCK_ADMIN_PASSWORD) {
+        return { kind: "invalid_credentials" };
+      }
+      if (profile.accountStatus === "banned") return { kind: "account_banned" };
+
+      setSignedInStaffId(profile.staffId);
+      return { kind: "success", staff: profile };
+    },
+
     async inviteAdmin(email) {
       await wait();
       const actor = currentProfile();
@@ -372,13 +394,14 @@ export const mockApi: ApiClient = {
   registration: {
     async lookupStaffId(staffId) {
       await wait();
-      const match = mockLookupResults.find(
-        (entry) => entry.staffId.toLowerCase() === staffId.trim().toLowerCase(),
-      );
-      if (!match) return { kind: "not_found" };
-      return match.alreadyRegistered
-        ? { kind: "already_registered", staff: match }
-        : { kind: "found", staff: match };
+      const needle = staffId.trim().toLowerCase();
+
+      if (mockClaimedStaffIds.some((id) => id.toLowerCase() === needle)) {
+        return { kind: "already_registered", staffId: staffId.trim() };
+      }
+
+      const match = mockLookupResults.find((entry) => entry.staffId.toLowerCase() === needle);
+      return match ? { kind: "found", staff: match } : { kind: "not_found" };
     },
 
     async register({ email, password }) {

@@ -8,8 +8,8 @@ import type { StaffLookupResult } from "@/types";
  * before they attach an email and a password to it.
  *
  * This step is the reason lookup returns so little. Someone typing staff IDs
- * into the previous screen sees only a name and an office, never a contact
- * detail, and cannot get past here without the record actually being theirs.
+ * into the previous screen sees only a name, never a contact detail, and cannot
+ * get past here without the record actually being theirs.
  */
 export function StepConfirm({
   staff,
@@ -35,10 +35,14 @@ export function StepConfirm({
           <dt className="text-xs uppercase tracking-wide text-muted-foreground">Staff ID</dt>
           <dd className="text-base font-medium text-foreground">{staff.staffId}</dd>
         </div>
-        <div className="flex flex-col gap-0.5 px-4 py-3">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Office</dt>
-          <dd className="text-base font-medium text-foreground">{staff.officeName}</dd>
-        </div>
+        {/* The backend lookup returns names only, so there is usually no office
+            to show. Hidden rather than left as an empty row. */}
+        {staff.officeName ? (
+          <div className="flex flex-col gap-0.5 px-4 py-3">
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Office</dt>
+            <dd className="text-base font-medium text-foreground">{staff.officeName}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <div className="flex flex-col gap-3">
