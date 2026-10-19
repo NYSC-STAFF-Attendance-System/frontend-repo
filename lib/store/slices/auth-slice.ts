@@ -37,6 +37,10 @@ const authSlice = createSlice({
       state.status = "authenticated";
       state.profile = action.payload;
     },
+    sessionEnded(state) {
+      state.profile = null;
+      state.status = "unauthenticated";
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -58,5 +62,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { signedIn } = authSlice.actions;
+export const { signedIn, sessionEnded } = authSlice.actions;
 export const authReducer = authSlice.reducer;

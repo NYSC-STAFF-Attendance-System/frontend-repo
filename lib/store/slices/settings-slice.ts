@@ -49,11 +49,15 @@ const settingsSlice = createSlice({
       state.saved = state.draft;
       state.lastSync = action.payload;
     },
+    hydrateRadius(state, action: PayloadAction<number>) {
+      state.draft.perimeterM = action.payload;
+      state.saved.perimeterM = action.payload;
+    },
     resetSettings(state) {
       state.draft = defaultSettings;
     },
   },
 });
 
-export const { patchSettings, saveSettings, resetSettings } = settingsSlice.actions;
+export const { patchSettings, saveSettings, resetSettings, hydrateRadius } = settingsSlice.actions;
 export const settingsReducer = settingsSlice.reducer;

@@ -4,9 +4,30 @@ import { useMemo } from "react";
 import { useQueryFilters } from "@/hooks/use-query-filters";
 import {
   ANOMALY_COUNT,
+  punctualityTrend,
   reportStaff,
   type ReportPeriod,
 } from "../_data";
+
+const CHART_WIDTH = 560;
+const CHART_HEIGHT = 120;
+const CHART_MIN = 84;
+const CHART_MAX = 100;
+
+export function usePunctualityChart() {
+  return useMemo(() => {
+    const points = punctualityTrend.map((point, index) => {
+      const x = (index / (punctualityTrend.length - 1)) * CHART_WIDTH;
+      const y = CHART_HEIGHT - ((point.value - CHART_MIN) / (CHART_MAX - CHART_MIN)) * CHART_HEIGHT;
+      return { ...point, x, y };
+    });
+    const line = points
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+      .join(" ");
+    const peak = points.reduce((best, point) => (point.value > best.value ? point : best));
+    return { width: CHART_WIDTH, height: CHART_HEIGHT, line, peak };
+  }, []);
+}
 import { downloadCsv } from "@/lib/csv";
 
 const FILTERS = {

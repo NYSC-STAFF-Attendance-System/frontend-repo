@@ -1,7 +1,5 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
 import {
   ArrowRight,
   BadgeCheck,
@@ -20,56 +18,29 @@ import { FilterSelect } from "@/app/admin/_components/filter-select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { LoadingState } from "@/components/states"
 import { InviteAdminPanel } from "./invite-admin"
-import { useStaffApprovals } from "../_hooks/use-staff-approvals"
-import {
-  departmentTone,
-  type ApprovalRequest,
-  type Department,
-  type Office,
-} from "../_data"
+import { SeedStaffPanel } from "./seed-staff"
+import { useStaffApprovals, type StaffRow } from "../_hooks/use-staff-approvals"
 
-const departments: Department[] = ["Administration", "ICT", "Finance"]
-const offices: Office[] = ["HQ - Abuja", "Zone B Office", "Zone C Office"]
-
-const avatarClass = {
-  green: "bg-emerald-100 text-nysc",
-  gray: "bg-zinc-200 text-zinc-600",
-} as const
-
-function ProfileAvatar({ staff }: { staff: ApprovalRequest }) {
-  const [failed, setFailed] = useState(false)
-  const photo = staff.photo
-
-  if (staff.avatar === "photo" && photo && !failed) {
-    return (
-      <Image
-        src={photo}
-        alt={staff.name}
-        width={40}
-        height={40}
-        className="size-10 rounded-full object-cover"
-        onError={() => setFailed(true)}
-      />
-    )
-  }
-
+function ProfileAvatar({ staff }: { staff: StaffRow }) {
   return (
-    <span
-      className={cn(
-        "flex size-10 items-center justify-center rounded-full text-xs font-semibold",
-        avatarClass[staff.avatar === "gray" ? "gray" : "green"]
-      )}
-    >
-      {staff.initials}
+    <span className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-nysc">
+      {staff.initials || "?"}
     </span>
   )
 }
 
 export function StaffApprovals() {
   const {
+    loading,
+    loadError,
+    reload,
+    pendingCount,
+    activeCount,
     queue,
-    approvedToday,
+    departments,
+    offices,
     query,
     department,
     office,
@@ -80,16 +51,17 @@ export function StaffApprovals() {
     visible,
     currentPage,
     pageCount,
+    pageItems,
     showingFrom,
     showingTo,
     filtered,
-    removeFromQueue,
     exportList,
   } = useStaffApprovals()
 
   return (
     <div className="flex flex-col gap-6">
       <InviteAdminPanel />
+      <SeedStaffPanel onSeeded={reload} />
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
           <h1 className="text-[26px] leading-tight font-bold tracking-tight text-zinc-900 sm:text-[32px]">
@@ -118,7 +90,7 @@ export function StaffApprovals() {
                 Total Pending
               </p>
               <p className="mt-3 text-[32px] leading-none font-semibold tracking-tight text-zinc-900 sm:text-[40px]">
-                {queue.length}
+                {pendingCount}
               </p>
             </div>
             <span className="flex size-11 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
@@ -135,43 +107,40 @@ export function StaffApprovals() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[11px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
-                Requests Today
+                All staff
               </p>
               <p className="mt-3 text-[32px] leading-none font-semibold tracking-tight text-zinc-900 sm:text-[40px]">
-                4
+                {queue.length}
               </p>
             </div>
             <span className="flex size-11 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
               <Calendar className="size-5" />
             </span>
           </div>
-          <p className="mt-4 text-sm text-zinc-400">+2 since 08:00 AM</p>
+          <p className="mt-4 text-sm text-zinc-400">Loaded from the server</p>
         </article>
 
         <article className="rounded-2xl border border-zinc-200/80 bg-white p-5">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[11px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
-                Approved Today
+                Active staff
               </p>
               <p className="mt-3 text-[32px] leading-none font-semibold tracking-tight text-nysc sm:text-[40px]">
-                {approvedToday}
+                {activeCount}
               </p>
             </div>
             <span className="flex size-11 items-center justify-center rounded-full bg-emerald-50 text-nysc">
               <BadgeCheck className="size-5" />
             </span>
           </div>
-          <p className="mt-4 flex items-center gap-1.5 text-sm text-nysc">
-            <ArrowRight className="size-3.5 -rotate-45" />
-            Avg. 14 mins
-          </p>
+          <p className="mt-4 text-sm text-nysc">Signed in and verified</p>
         </article>
 
         <article className="rounded-2xl bg-[#148a47] p-5 text-white shadow-[0_8px_24px_rgba(20,138,71,0.18)]">
           <h2 className="text-xl font-semibold">Clear Queue</h2>
           <p className="mt-1 text-sm text-white/80">
-            {queue.length} items awaiting review
+            {pendingCount} pending on the server
           </p>
           <Button
             className="mt-6 h-9 rounded-lg bg-white px-4 text-nysc hover:bg-white/90"
@@ -217,7 +186,7 @@ export function StaffApprovals() {
               className="w-full min-w-0 rounded-xl sm:w-auto sm:min-w-40"
               options={[
                 { value: "all", label: "Filter Department" },
-                ...departments,
+                ...departments.map((value) => ({ value, label: value })),
               ]}
             />
             <FilterSelect
@@ -230,7 +199,7 @@ export function StaffApprovals() {
               className="w-full min-w-0 rounded-xl sm:w-auto sm:min-w-40"
               options={[
                 { value: "all", label: "Filter Office" },
-                ...offices,
+                ...offices.map((value) => ({ value, label: value })),
               ]}
             />
           </div>
@@ -251,13 +220,19 @@ export function StaffApprovals() {
               </tr>
             </thead>
             <tbody>
-              {visible.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10">
+                    <LoadingState label="Loading staff" />
+                  </td>
+                </tr>
+              ) : visible.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
                     className="px-5 py-16 text-center text-sm text-zinc-400"
                   >
-                    No pending registrations match these filters.
+                    {loadError ?? "No staff match these filters."}
                   </td>
                 </tr>
               ) : (
@@ -274,12 +249,7 @@ export function StaffApprovals() {
                     </td>
                     <td className="px-5 py-4">
                       <p className="flex items-center gap-1.5 text-sm text-zinc-600">
-                        <span
-                          className={cn(
-                            "size-1.5 rounded-full",
-                            departmentTone[staff.department]
-                          )}
-                        />
+                        <span className="size-1.5 rounded-full bg-zinc-300" />
                         {staff.department}
                       </p>
                       <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-400">
@@ -294,9 +264,9 @@ export function StaffApprovals() {
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500">
-                        <span className="size-1.5 rounded-full bg-rose-400" />
-                        Pending Review
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500 capitalize">
+                        <span className="size-1.5 rounded-full bg-zinc-400" />
+                        {staff.status}
                       </span>
                     </td>
                     <td className="px-5 py-4">
@@ -304,21 +274,25 @@ export function StaffApprovals() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          className="text-zinc-400 hover:text-zinc-700"
+                          className="text-zinc-300"
                           aria-label={`View ${staff.name}`}
+                          disabled
+                          title="The server has no staff detail page."
                         >
                           <Eye className="size-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          className="h-8 px-3 text-sm font-semibold text-red-500 hover:bg-red-50 hover:text-red-600"
-                          onClick={() => removeFromQueue(staff.id, "reject")}
+                          className="h-8 px-3 text-sm font-semibold text-zinc-300"
+                          disabled
+                          title="The server has no reject action."
                         >
                           Reject
                         </Button>
                         <Button
-                          className="h-8 rounded-lg bg-nysc px-3 text-sm text-white hover:bg-nysc/90"
-                          onClick={() => removeFromQueue(staff.id, "approve")}
+                          className="h-8 rounded-lg bg-zinc-200 px-3 text-sm text-zinc-400"
+                          disabled
+                          title="Staff become active when they verify their email."
                         >
                           Approve
                         </Button>
@@ -331,8 +305,8 @@ export function StaffApprovals() {
           </table>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <p className="text-sm text-zinc-400">
+        <div className="flex flex-col items-center gap-3 px-4 py-4 sm:flex-row sm:justify-between sm:px-5">
+          <p className="text-center text-sm text-zinc-400 sm:text-left">
             Showing {showingFrom} to {showingTo} of {filtered.length} entries
           </p>
           <div className="flex items-center gap-1">
@@ -346,24 +320,38 @@ export function StaffApprovals() {
             >
               <ChevronLeft className="size-4" />
             </Button>
-            {Array.from({ length: pageCount }, (_, index) => index + 1).map(
-              (pageNumber) => (
-                <Button
-                  key={pageNumber}
-                  size="icon-sm"
-                  variant={pageNumber === currentPage ? "default" : "ghost"}
-                  className={cn(
-                    "size-8 text-sm",
-                    pageNumber === currentPage
-                      ? "bg-nysc text-white hover:bg-nysc/90"
-                      : "text-zinc-500"
-                  )}
-                  onClick={() => setPage(pageNumber)}
-                >
-                  {pageNumber}
-                </Button>
-              )
-            )}
+            <p className="min-w-16 px-1 text-center text-sm font-semibold text-zinc-700 tabular-nums sm:hidden">
+              {currentPage} / {pageCount}
+            </p>
+            <div className="hidden items-center gap-1 sm:flex">
+              {pageItems.map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="flex size-8 items-center justify-center text-sm text-zinc-400"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <Button
+                    key={item}
+                    size="icon-sm"
+                    variant={item === currentPage ? "default" : "ghost"}
+                    className={cn(
+                      "size-8 text-sm",
+                      item === currentPage
+                        ? "bg-nysc text-white hover:bg-nysc/90"
+                        : "text-zinc-500",
+                    )}
+                    onClick={() => setPage(item)}
+                    aria-label={`Page ${item}`}
+                    aria-current={item === currentPage ? "page" : undefined}
+                  >
+                    {item}
+                  </Button>
+                ),
+              )}
+            </div>
             <Button
               variant="ghost"
               size="icon-sm"

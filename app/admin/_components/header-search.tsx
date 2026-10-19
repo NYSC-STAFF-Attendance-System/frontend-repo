@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ReactNode, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import {
   ClipboardList,
   FileText,
@@ -25,40 +25,8 @@ import {
   useAdminSearch,
   type SearchHit,
   type SearchKind,
+  type TitlePart,
 } from "../_hooks/use-admin-search";
-
-function highlight(text: string, marks: number[]) {
-  if (marks.length === 0) return text;
-  const set = new Set(marks);
-  const parts: ReactNode[] = [];
-  let buffer = "";
-  let marked = set.has(0);
-
-  const flush = (isMark: boolean, key: number) => {
-    if (!buffer) return;
-    parts.push(
-      isMark ? (
-        <mark key={key} className="rounded-[3px] bg-mint px-px text-nysc-dark">
-          {buffer}
-        </mark>
-      ) : (
-        <span key={key}>{buffer}</span>
-      ),
-    );
-    buffer = "";
-  };
-
-  for (let index = 0; index < text.length; index++) {
-    const isMark = set.has(index);
-    if (index > 0 && isMark !== marked) {
-      flush(marked, index);
-      marked = isMark;
-    }
-    buffer += text[index];
-  }
-  flush(marked, text.length);
-  return parts;
-}
 
 const kindIcon: Record<SearchKind, typeof Search> = {
   person: UserRound,
@@ -183,18 +151,16 @@ function SearchPanel({
       ) : (
         <ul className="max-h-95 overflow-y-auto py-1.5" role="listbox">
           {search.results.map((row, index) => {
-            const prevKind = search.results[index - 1]?.hit.kind;
-            const showKind = row.hit.kind !== prevKind;
             return (
               <li key={row.hit.id}>
-                {showKind ? (
+                {row.showKind ? (
                   <p className="px-3.5 pt-2 pb-1 text-[10px] font-semibold tracking-[0.14em] text-olive-muted uppercase">
                     {kindLabel[row.hit.kind]}
                   </p>
                 ) : null}
                 <ResultRow
                   hit={row.hit}
-                  marks={row.marks}
+                  titleParts={row.titleParts}
                   active={index === search.active}
                   onHover={() => search.setActive(index)}
                   onPick={() => search.go(row.hit)}
@@ -338,13 +304,13 @@ function IdleJump({
 
 function ResultRow({
   hit,
-  marks,
+  titleParts,
   active,
   onHover,
   onPick,
 }: {
   hit: SearchHit;
-  marks: number[];
+  titleParts: TitlePart[];
   active: boolean;
   onHover: () => void;
   onPick: () => void;
@@ -384,7 +350,15 @@ function ResultRow({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="truncate text-sm font-semibold text-ink">
-            {highlight(hit.title, marks)}
+            {titleParts.map((part, index) =>
+              part.mark ? (
+                <mark key={index} className="rounded-[3px] bg-mint px-px text-nysc-dark">
+                  {part.text}
+                </mark>
+              ) : (
+                <span key={index}>{part.text}</span>
+              ),
+            )}
           </span>
           {hit.badge ? (
             <span

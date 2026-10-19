@@ -38,19 +38,13 @@ function SectionLabel({
   )
 }
 
-function downloadAttachment(name: string) {
-  const blob = new Blob([`NYSC audit attachment: ${name}\n`], {
-    type: "text/plain",
-  })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = name
-  link.click()
-  URL.revokeObjectURL(url)
-}
-
-export function AuditEventDrawer({ detail }: { detail: AuditEventDetail }) {
+export function AuditEventDrawer({
+  detail,
+  onDownload,
+}: {
+  detail: AuditEventDetail
+  onDownload: (name: string) => void
+}) {
   return (
     <>
       <SheetHeader className="gap-1 border-b border-line px-5 py-4">
@@ -247,7 +241,7 @@ export function AuditEventDrawer({ detail }: { detail: AuditEventDetail }) {
                 size="icon-sm"
                 className="text-nysc-green hover:text-nysc-dark"
                 aria-label="Download attachment"
-                onClick={() => downloadAttachment(detail.attachment!.name)}
+                onClick={() => onDownload(detail.attachment!.name)}
               >
                 <Download className="size-4" />
               </Button>

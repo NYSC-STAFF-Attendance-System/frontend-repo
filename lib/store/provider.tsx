@@ -2,8 +2,15 @@
 
 import { useEffect } from "react";
 import { Provider } from "react-redux";
-import { hydrateAuth } from "./slices/auth-slice";
+import { onAdminSessionEnded } from "@/lib/api/admin-session";
+import { hydrateAuth, sessionEnded } from "./slices/auth-slice";
 import { store } from "./store";
+
+if (typeof window !== "undefined") {
+  onAdminSessionEnded(() => {
+    store.dispatch(sessionEnded());
+  });
+}
 
 function AuthHydrator({ children }: { children: React.ReactNode }) {
   useEffect(() => {

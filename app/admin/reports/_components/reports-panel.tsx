@@ -24,7 +24,6 @@ import {
   ANOMALY_COUNT,
   directorates,
   periodRange,
-  punctualityTrend,
   reportKpis,
   reportPeriods,
   stationFilters,
@@ -33,7 +32,7 @@ import {
   type ReportStaffRow,
   type ScoreBand,
 } from "../_data"
-import { useReports } from "../_hooks/use-reports"
+import { usePunctualityChart, useReports } from "../_hooks/use-reports"
 
 const bandClass: Record<ScoreBand, string> = {
   Perfect: "bg-mint text-nysc-dark",
@@ -110,23 +109,17 @@ const staffColumns: DataTableColumn<ReportStaffRow>[] = [
   },
 ]
 
-function PunctualityChart() {
-  const width = 560
-  const height = 120
-  const min = 84
-  const max = 100
-  const points = punctualityTrend.map((point, index) => {
-    const x = (index / (punctualityTrend.length - 1)) * width
-    const y = height - ((point.value - min) / (max - min)) * height
-    return { ...point, x, y }
-  })
-  const line = points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ")
-  const peak = points.reduce((best, point) =>
-    point.value > best.value ? point : best
-  )
-
+function PunctualityChart({
+  width,
+  height,
+  line,
+  peak,
+}: {
+  width: number
+  height: number
+  line: string
+  peak: { x: number; y: number }
+}) {
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
@@ -164,6 +157,7 @@ export function ReportsPanel() {
     resetTable,
     exportCsv,
   } = useReports()
+  const chart = usePunctualityChart()
 
   return (
     <div className="flex flex-col gap-4">
@@ -261,10 +255,15 @@ export function ReportsPanel() {
               Trend
             </h2>
             <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-nysc-dark">
-              {punctualityTrend[4].value}%
+              {chart.peak.value}%
             </span>
           </div>
-          <PunctualityChart />
+          <PunctualityChart
+            width={chart.width}
+            height={chart.height}
+            line={chart.line}
+            peak={chart.peak}
+          />
         </section>
 
         <section className="rounded-[20px] border border-line/80 bg-white p-4">

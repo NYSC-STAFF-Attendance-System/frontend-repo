@@ -27,14 +27,6 @@ import { RegenerateDialog } from "@/app/admin/settings/office-qr/_components/reg
 export function OfficeQrPanel() {
   const qr = useOfficeQr();
 
-  if (qr.status === "idle" || qr.status === "loading" || !qr.station) {
-    return (
-      <div className="flex min-h-80 items-center justify-center">
-        <LoadingState label="Loading office QR" />
-      </div>
-    );
-  }
-
   if (qr.status === "error") {
     return (
       <p
@@ -43,6 +35,14 @@ export function OfficeQrPanel() {
       >
         {qr.message ?? "Could not load the office QR code."}
       </p>
+    );
+  }
+
+  if (qr.status === "loading" || !qr.station) {
+    return (
+      <div className="flex min-h-80 items-center justify-center">
+        <LoadingState label="Loading office QR" />
+      </div>
     );
   }
 
@@ -93,14 +93,9 @@ export function OfficeQrPanel() {
           <div className="mt-1 max-w-md">
             <FilterSelect
               aria-label="Active office station"
-              value={station.stationId}
-              onChange={() => undefined}
-              options={[
-                {
-                  value: station.stationId,
-                  label: `${station.officeName} (${station.stationId})`,
-                },
-              ]}
+              value={qr.officeId}
+              onChange={qr.setOfficeId}
+              options={qr.officeOptions}
               className="h-10 rounded-xl"
             />
           </div>

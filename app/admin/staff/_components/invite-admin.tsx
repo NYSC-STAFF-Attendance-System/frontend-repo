@@ -1,95 +1,72 @@
-"use client"
+"use client";
 
-import { NO_RESPONSE_MESSAGE } from "@/lib/messages"
-import { useInviteAdmin } from "../_hooks/use-invite-admin"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { assertNever } from "@/lib/utils"
-import type { InviteAdminResult } from "@/types"
+import { useInviteAdmin } from "../_hooks/use-invite-admin";
+import { FilterSelect } from "@/app/admin/_components/filter-select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /**
- * Super admins invite an existing staff member. The mock cannot send email, so
- * the generated link is shown on this screen for the prototype.
+ * Superuser invites an office admin. The server emails the accept link.
  */
 export function InviteAdminPanel() {
-  const { isSuperAdmin, email, setEmail, submitting, result, submit } = useInviteAdmin()
+  const form = useInviteAdmin();
 
-  if (!isSuperAdmin) return null
+  if (!form.isSuperAdmin) return null;
 
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5">
       <h2 className="text-lg font-semibold text-zinc-900">Invite an admin</h2>
       <p className="mt-1 text-sm text-zinc-500">
-        Send a verification link to a staff email. After they open it, they sign
-        in with that email to reach the admin dashboard.
+        Send an invitation for one office. They set a password from the email, then sign in here.
       </p>
-      <form onSubmit={submit} className="mt-4 flex flex-col gap-3 sm:flex-row">
+      <form onSubmit={form.submit} className="mt-4 grid gap-3 sm:grid-cols-2">
+        <Input
+          name="firstName"
+          value={form.firstName}
+          onChange={(event) => form.setFirstName(event.target.value)}
+          placeholder="First name"
+          autoComplete="off"
+          disabled={form.submitting}
+          className="h-10 rounded-xl text-sm"
+        />
+        <Input
+          name="surname"
+          value={form.surname}
+          onChange={(event) => form.setSurname(event.target.value)}
+          placeholder="Surname"
+          autoComplete="off"
+          disabled={form.submitting}
+          className="h-10 rounded-xl text-sm"
+        />
         <Input
           type="email"
           name="inviteEmail"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="c.ibrahim@nysc.gov.ng"
+          value={form.email}
+          onChange={(event) => form.setEmail(event.target.value)}
+          placeholder="Work email"
           autoComplete="off"
-          disabled={submitting}
-          className="h-10 rounded-xl text-sm sm:max-w-sm"
+          disabled={form.submitting}
+          className="h-10 rounded-xl text-sm"
+        />
+        <FilterSelect
+          aria-label="Office"
+          value={form.officeId}
+          onChange={form.setOfficeId}
+          placeholder="Office"
+          options={form.offices.map((office) => ({
+            value: office.id,
+            label: office.name,
+          }))}
+          className="h-10 rounded-xl"
         />
         <Button
           type="submit"
-          disabled={submitting || email.trim().length === 0}
-          className="h-10 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90"
+          disabled={form.submitting || !form.ready}
+          className="h-10 rounded-xl bg-nysc px-4 text-white hover:bg-nysc/90 sm:col-span-2 sm:w-fit"
         >
-          {submitting ? "Sending..." : "Send invite"}
+          {form.submitting ? "Sending..." : "Send invite"}
         </Button>
       </form>
-      {result ? <InviteResult result={result} /> : null}
     </section>
-  )
-}
-
-function InviteResult({ result }: { result: InviteAdminResult }) {
-  switch (result.kind) {
-    case "sent":
-      return (
-        <p className="mt-3 text-sm text-zinc-600">
-          Invite sent to <span className="font-medium text-zinc-900">{result.email}</span>.
-          Prototype link:{" "}
-          <a href={result.inviteUrl} className="break-all text-nysc underline-offset-4 hover:underline">
-            {result.inviteUrl}
-          </a>
-        </p>
-      )
-    case "not_staff":
-      return (
-        <p role="alert" className="mt-3 text-sm text-red-600">
-          That address is not a registered staff email.
-        </p>
-      )
-    case "already_admin":
-      return (
-        <p role="alert" className="mt-3 text-sm text-zinc-600">
-          That staff member is already an admin.
-        </p>
-      )
-    case "forbidden":
-      return (
-        <p role="alert" className="mt-3 text-sm text-red-600">
-          Only a super admin can send invitations.
-        </p>
-      )
-    case "offline":
-      return (
-        <p role="alert" className="mt-3 text-sm text-red-600">
-          {NO_RESPONSE_MESSAGE}
-        </p>
-      )
-    case "error":
-      return (
-        <p role="alert" className="mt-3 text-sm text-red-600">
-          {result.message}
-        </p>
-      )
-    default:
-      return assertNever(result)
-  }
+  );
 }

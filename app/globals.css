@@ -169,6 +169,32 @@
   }
 }
 
+@keyframes nysc-snack-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes nysc-snack-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+.nysc-snack {
+  animation: nysc-snack-in 180ms ease-out;
+}
+
 @keyframes nysc-caret {
   0%,
   46% {
