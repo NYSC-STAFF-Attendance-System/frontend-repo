@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useSnackbar } from "@/components/snackbar";
 import { useStaff } from "@/hooks/use-staff";
 import { useAppDispatch } from "@/lib/store/hooks";
 import { signOut } from "@/lib/store/slices/auth-slice";
@@ -52,6 +53,7 @@ const notices: HeaderNotice[] = [
 
 export function useAdminHeader() {
   const staff = useStaff();
+  const snackbar = useSnackbar();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [unreadIds, setUnreadIds] = useState(() => new Set(notices.slice(0, 2).map((item) => item.id)));
@@ -78,7 +80,7 @@ export function useAdminHeader() {
   async function handleSignOut() {
     setSigningOut(true);
     await dispatch(signOut());
-    // Back to the dashboard's own sign-in, not the staff one.
+    snackbar({ tone: "info", title: "Signed out." });
     router.replace("/admin/login");
   }
 

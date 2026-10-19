@@ -44,15 +44,6 @@ const roleClass: Record<AuditRole, string> = {
   System: "bg-zinc-800 text-white",
 }
 
-function pageNumbers(current: number, total: number): Array<number | "ellipsis"> {
-  if (total <= 5) {
-    return Array.from({ length: total }, (_, index) => index + 1)
-  }
-  if (current <= 3) return [1, 2, 3, "ellipsis", total]
-  if (current >= total - 2) return [1, "ellipsis", total - 2, total - 1, total]
-  return [1, "ellipsis", current, "ellipsis", total]
-}
-
 export function AuditLog() {
   const {
     query,
@@ -67,6 +58,7 @@ export function AuditLog() {
     visible,
     currentPage,
     pageCount,
+    pageItems,
     showingFrom,
     showingTo,
     selectedId,
@@ -81,6 +73,7 @@ export function AuditLog() {
     setSelectedId,
     resetFilters,
     exportCsv,
+    downloadAttachment,
   } = useAuditLog()
 
   return (
@@ -258,7 +251,7 @@ export function AuditLog() {
             >
               <ChevronLeft className="size-4" />
             </Button>
-            {pageNumbers(currentPage, pageCount).map((item, index) =>
+            {pageItems.map((item, index) =>
               item === "ellipsis" ? (
                 <span
                   key={`ellipsis-${index}`}
@@ -307,7 +300,9 @@ export function AuditLog() {
           showCloseButton={false}
           className="gap-0 rounded-none border-line p-0 sm:rounded-l-[20px] data-[side=right]:sm:max-w-md"
         >
-          {selectedDetail ? <AuditEventDrawer detail={selectedDetail} /> : null}
+          {selectedDetail ? (
+            <AuditEventDrawer detail={selectedDetail} onDownload={downloadAttachment} />
+          ) : null}
         </SheetContent>
       </Sheet>
     </div>

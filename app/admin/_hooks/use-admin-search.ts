@@ -185,6 +185,29 @@ function scoreHaystack(haystack: string, needle: string) {
   return 36 + consecutive - last * 0.2;
 }
 
+export type TitlePart = { text: string; mark: boolean };
+
+function titleParts(text: string, marks: number[]): TitlePart[] {
+  if (marks.length === 0) return [{ text, mark: false }];
+  const marked = new Set(marks);
+  const parts: TitlePart[] = [];
+  let buffer = "";
+  let marking = marked.has(0);
+
+  for (let index = 0; index < text.length; index += 1) {
+    const mark = marked.has(index);
+    if (buffer && mark !== marking) {
+      parts.push({ text: buffer, mark: marking });
+      buffer = "";
+    }
+    marking = mark;
+    buffer += text[index];
+  }
+
+  if (buffer) parts.push({ text: buffer, mark: marking });
+  return parts;
+}
+
 function matchIndexes(text: string, needle: string): number[] {
   const hay = text.toLowerCase();
   const n = needle.toLowerCase().trim();
@@ -369,13 +392,23 @@ export function useAdminSearch() {
         if (intent === "pending" && (hit.badge === "Pending" || hit.href === "/admin/staff")) points += 40;
         if (intent === "qr" && hit.href.includes("office-qr")) points += 50;
         if (intent === "deficient" && hit.href.includes("reports")) points += 40;
-        return { hit, points, marks: matchIndexes(hit.title, needle) };
+        return {
+          hit,
+          points,
+          titleParts: titleParts(hit.title, matchIndexes(hit.title, needle)),
+        };
       })
       .filter((row): row is NonNullable<typeof row> => row !== null)
       .sort((a, b) => b.points - a.points);
 
     const best = ranked[0]?.points ?? 0;
-    return ranked.filter((row) => row.points >= best * 0.55).slice(0, 8);
+    return ranked
+      .filter((row) => row.points >= best * 0.55)
+      .slice(0, 8)
+      .map((row, index, list) => ({
+        ...row,
+        showKind: list[index - 1]?.hit.kind !== row.hit.kind,
+      }));
   }, [catalog, intent, query]);
 
   const go = useCallback(

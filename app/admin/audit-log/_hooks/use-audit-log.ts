@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { downloadCsv } from "@/lib/csv";
 import { useQueryFilters } from "@/hooks/use-query-filters";
-import { paginate } from "@/lib/pagination";
+import { pageItems, paginate } from "@/lib/pagination";
 import {
   auditEvents,
   getAuditEventDetail,
@@ -82,6 +82,18 @@ export function useAuditLog() {
     downloadCsv("audit-log.csv", [header, ...rows].join("\n"));
   }
 
+  function downloadAttachment(name: string) {
+    const blob = new Blob([`NYSC audit attachment: ${name}\n`], {
+      type: "text/plain",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return {
     query: filters.q,
     date: filters.date,
@@ -95,6 +107,7 @@ export function useAuditLog() {
     visible: page.rows,
     currentPage: page.currentPage,
     pageCount: page.pageCount,
+    pageItems: pageItems(page.currentPage, page.pageCount),
     showingFrom: page.from,
     showingTo: page.to,
     selectedId: filters.event || null,
@@ -110,5 +123,6 @@ export function useAuditLog() {
     setSelectedId: (event: string | null) => setFilters({ event: event ?? "" }),
     resetFilters,
     exportCsv,
+    downloadAttachment,
   };
 }

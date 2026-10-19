@@ -14,3 +14,17 @@ export const NO_RESPONSE_TITLE = "Can't reach the server";
 
 export const NO_RESPONSE_MESSAGE =
   "We couldn't reach the server. Check your connection and try again.";
+
+/** Title and optional detail for a failed dashboard call. */
+export function adminFailureNotice(result: {
+  kind: string;
+  message?: string;
+}): { title: string; description?: string } {
+  if (result.kind === "offline") {
+    return { title: NO_RESPONSE_TITLE, description: NO_RESPONSE_MESSAGE };
+  }
+  if (result.kind === "forbidden") {
+    return { title: "You don't have access to that." };
+  }
+  return { title: result.message || "Something went wrong. Please try again." };
+}
