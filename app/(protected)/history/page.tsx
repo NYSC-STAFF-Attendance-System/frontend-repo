@@ -63,12 +63,12 @@ export default function HistoryPage() {
       {state.name === "ready" ? (
         state.days.length === 0 ? (
           <EmptyState
-            title="No attendance yet"
+            title="No attendance in this period"
             message="Once you scan the code at your office, your days will appear here."
           />
         ) : (
           <>
-            <Statistics statistics={state.statistics} />
+            {state.statistics ? <Statistics statistics={state.statistics} /> : null}
             <ol className="flex flex-col gap-2">
               {state.days.map((day) => (
                 <DayRow key={day.id} day={day} />

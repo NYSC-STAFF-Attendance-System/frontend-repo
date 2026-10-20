@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { BrandLockup } from "@/components/brand";
 import { Screen } from "@/components/screen";
 import { LoadingState } from "@/components/states";
 import { ResetPasswordView } from "./reset-password-view";
@@ -12,6 +13,7 @@ import { ResetPasswordView } from "./reset-password-view";
 export default function ResetPasswordPage() {
   return (
     <Screen>
+      <BrandLockup align="start" className="mb-8" />
       <Suspense fallback={<LoadingState label="Loading" />}>
         <ResetPasswordView />
       </Suspense>

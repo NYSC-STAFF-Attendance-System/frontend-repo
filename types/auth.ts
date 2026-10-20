@@ -108,8 +108,14 @@ export type TodayResult =
   | { kind: "offline" }
   | { kind: "error"; message: string };
 
-/** /history returns the rows and the figures together, in one call. */
+/**
+ * /history returns the rows and the figures together, in one call.
+ *
+ * statistics is null when the server has not calculated them - the live
+ * backend has no statistics yet. The screen then shows the rows alone rather
+ * than working the figures out itself.
+ */
 export type HistoryResult =
-  | { kind: "success"; days: AttendanceDay[]; statistics: AttendanceStatistics }
+  | { kind: "success"; days: AttendanceDay[]; statistics: AttendanceStatistics | null }
   | { kind: "offline" }
   | { kind: "error"; message: string };

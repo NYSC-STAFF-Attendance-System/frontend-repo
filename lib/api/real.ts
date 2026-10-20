@@ -6,7 +6,12 @@ import type {
   AdminAttendanceRow,
   AdminOffice,
   AdminStaffMember,
+  AttendanceDay,
+  AttendanceOutcome,
+  HistoryPeriod,
+  LoginResult,
   OfficeQrStation,
+  StaffProfile,
 } from "@/types";
 import {
   clearAdminSession,
@@ -17,6 +22,13 @@ import {
   type AdminRole,
   type AdminSession,
 } from "./admin-session";
+import {
+  clearStaffSession,
+  readDays,
+  readStaffSession,
+  rememberDay,
+  writeStaffSession,
+} from "./staff-session";
 import type { ApiClient } from "./types";
 
 /**
@@ -41,7 +53,7 @@ import type { ApiClient } from "./types";
  *   GET  /api/attendance/admin/list/
  *   GET  /api/attendance/admin/reports/
  *
- * Not yet:
+ * Wired for the staff app:
  *   POST /api/staff/login/         staff ID or email, password, device_id
  *   GET  /api/attendance/scan/?t=  resolve a QR token, no geofence
  *   POST /api/attendance/check/    record Sign In or Sign Out, geofence enforced
@@ -84,6 +96,21 @@ client.interceptors.request.use((config) => {
   const url = config.url ?? "";
   if (!needsAdminToken(url)) return config;
   const access = readAdminSession()?.access;
+  if (access) {
+    config.headers.set("Authorization", `Bearer ${access}`);
+  }
+  return config;
+});
+
+/**
+ * The staff JWT goes to attendance check only. Every other staff route is
+ * public, and Django REST's JWT check runs before the permission check: a
+ * stale token sent to a public endpoint gets a 401 there too.
+ */
+client.interceptors.request.use((config) => {
+  const path = (config.url ?? "").split("?")[0];
+  if (!path.startsWith("/api/attendance/check")) return config;
+  const access = readStaffSession()?.access;
   if (access) {
     config.headers.set("Authorization", `Bearer ${access}`);
   }
@@ -413,17 +440,208 @@ async function messageFromMaybeBlob(error: unknown): Promise<string | null> {
   return messageOf(error);
 }
 
+/**
+ * StaffProfile from the login response. PROVISIONAL: login returns only the
+ * ID, email and name, and there is no profile endpoint, so rank, department
+ * and office are empty - screens hide an empty field. The office is filled in
+ * by the first scan (see rememberDay). Status, role and verification are known
+ * from the login succeeding at all - the backend refuses banned and unverified
+ * accounts there.
+ */
+function staffProfileOf(data: Json): StaffProfile {
+  return {
+    staffId: text(data.staff_id) ?? "",
+    fullName: fullNameOf(data),
+    email: text(data.email) ?? "",
+    rank: text(data.rank) ?? "",
+    department: { id: "", name: text(data.department) ?? "" },
+    office: { id: text(data.office_id) ?? "", name: text(data.office_name) ?? "" },
+    accountStatus: "active",
+    role: "staff",
+    emailVerified: true,
+    deviceBoundAt: null,
+  };
+}
+
+/**
+ * A failed staff login as a LoginResult.
+ *
+ * "Invalid credentials." is confirmed (400, as a non-field error). The wording
+ * for a wrong device, a banned account and an unverified email is not
+ * documented, so those are PROVISIONAL matches on the message - confirm them
+ * against the backend and tighten these when it does.
+ */
+function staffLoginFailureOf(error: unknown, staffIdOrEmail: string): LoginResult {
+  if (isOffline(error)) return { kind: "offline" };
+  const status = statusOf(error);
+  if (status === 429) {
+    return { kind: "rate_limited", retryAfterSeconds: retryAfterOf(error) };
+  }
+  const message = messageOf(error) ?? "";
+  if (/device/i.test(message)) return { kind: "wrong_device" };
+  if (/\bban|deactiv|suspend|disabled/i.test(message)) return { kind: "account_banned" };
+  if (/verif/i.test(message)) {
+    return {
+      kind: "email_not_verified",
+      email: staffIdOrEmail.includes("@") ? staffIdOrEmail : "your email",
+    };
+  }
+  // Includes field errors such as a staff ID over six characters - to the
+  // person typing, that is simply a staff ID that does not exist.
+  if (status === 400 || status === 401) return { kind: "invalid_credentials" };
+  return { kind: "error", message: message || FALLBACK_MESSAGE };
+}
+
+/**
+ * An AttendanceRecord as an AttendanceDay.
+ *
+ * The backend's status is only signed_in or signed_out - it has no lateness,
+ * so minutesLate is always null and a day is never "late". PROVISIONAL until
+ * the backend decides whether lateness exists.
+ */
+function attendanceDayOf(data: Json): AttendanceDay {
+  const signOutAt = text(data.sign_out_at);
+  return {
+    id: text(data.id) ?? "",
+    date: text(data.attendance_date) ?? "",
+    signInAt: text(data.sign_in_at),
+    signOutAt,
+    status: signOutAt ? "checked_out" : "present",
+    minutesLate: null,
+    officeId: text(data.office_id) ?? "",
+    officeName: text(data.office_name) ?? "",
+  };
+}
+
+/** Today's date in Africa/Lagos, YYYY-MM-DD - the backend's day boundary. */
+function lagosToday(): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date());
+}
+
+/** The backend's DecimalField takes at most six decimal places. */
+function coordinate(value: number): string {
+  return value.toFixed(6);
+}
+
+const PASSWORDS_UNAVAILABLE =
+  "Password changes are not available yet. Ask your office admin if you need help signing in.";
+
+/** Today's record from the ones this browser has kept, or null. */
+function keptToday(staffId: string): AttendanceDay | null {
+  const date = lagosToday();
+  return readDays(staffId).find((day) => day.date === date) ?? null;
+}
+
+/**
+ * First day of a /history period, YYYY-MM-DD in Africa/Lagos. Weeks start on
+ * Monday. The period always ends today.
+ */
+function periodStart(period: HistoryPeriod, today: string): string {
+  if (period === "this_month") return `${today.slice(0, 8)}01`;
+  if (period === "this_week") {
+    const [year, month, day] = today.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+    return date.toISOString().slice(0, 10);
+  }
+  return today;
+}
+
+/**
+ * Keeps a record the backend just returned, and the office it names. Login
+ * does not say which office someone belongs to, so the first scan is where the
+ * profile learns it.
+ */
+function keepDay(day: AttendanceDay): void {
+  const session = readStaffSession();
+  if (!session) return;
+  rememberDay(session.profile.staffId, day);
+  if (day.officeId && session.profile.office.id !== day.officeId) {
+    writeStaffSession({
+      ...session,
+      profile: { ...session.profile, office: { id: day.officeId, name: day.officeName } },
+    });
+  }
+}
+
+/**
+ * A refused attendance check as an AttendanceOutcome.
+ *
+ * Confirmed wording, from the backend's flow guide: "Please go to your office
+ * to sign in." and "You have already completed your attendance for today."
+ * Everything else is a PROVISIONAL match on the message.
+ */
+function checkFailureOf(error: unknown, staffId: string | null): AttendanceOutcome {
+  if (isOffline(error)) return { kind: "offline" };
+  const status = statusOf(error);
+  if (status === 401) {
+    clearStaffSession();
+    return { kind: "error", message: SESSION_ENDED_MESSAGE };
+  }
+  if (status === 429) {
+    return { kind: "rate_limited", retryAfterSeconds: retryAfterOf(error) };
+  }
+
+  const message = messageOf(error) ?? "";
+  if (/go to your office|geofence|too far|outside/i.test(message)) {
+    return { kind: "outside_geofence" };
+  }
+  if (/already completed/i.test(message)) {
+    const day = staffId ? keptToday(staffId) : null;
+    // The outcome carries the day; without one saved here, say it in words.
+    if (day?.signOutAt) return { kind: "already_complete", day };
+    return { kind: "error", message };
+  }
+  if (/office/i.test(message) && /inactive|not active|deactiv|closed/i.test(message)) {
+    return { kind: "office_inactive" };
+  }
+  if (/device/i.test(message)) return { kind: "wrong_device" };
+  if (/\bban|deactiv|suspend|disabled/i.test(message)) return { kind: "account_banned" };
+  if (/token/i.test(message) && /unknown|expired|invalid/i.test(message)) {
+    return { kind: "invalid_token" };
+  }
+  return { kind: "error", message: message || FALLBACK_MESSAGE };
+}
+
 export const realApi: ApiClient = {
   auth: {
-    async login() {
-      return pending();
+    // POST /api/staff/login/ - staff_id or email, never both.
+    async login({ staffIdOrEmail, password, deviceId }) {
+      const id = staffIdOrEmail.trim();
+      const credentials = id.includes("@") ? { email: id } : { staff_id: id };
+      try {
+        const response = await client.post("/api/staff/login/", {
+          ...credentials,
+          password,
+          device_id: deviceId,
+        });
+        const data = payloadOf(response.data);
+        const access = text(data.access);
+        if (!access) return { kind: "error", message: FALLBACK_MESSAGE };
+
+        const profile = staffProfileOf(data);
+        // One person per browser. Without this, a dashboard session left
+        // behind would decide what getProfile returns.
+        clearAdminSession();
+        writeStaffSession({ access, profile });
+        return { kind: "success", staff: profile };
+      } catch (error) {
+        return staffLoginFailureOf(error, id);
+      }
     },
+
+    // Neither login has a logout endpoint, so forgetting the tokens is the
+    // whole of signing out. The device binding stays.
     async logout() {
       clearAdminSession();
+      clearStaffSession();
     },
+
     async getProfile() {
-      const session = readAdminSession();
-      return session ? profileFromAdminSession(session) : null;
+      const admin = readAdminSession();
+      if (admin) return profileFromAdminSession(admin);
+      return readStaffSession()?.profile ?? null;
     },
   },
 
@@ -453,6 +671,7 @@ export const realApi: ApiClient = {
           firstName: text(data.first_name) ?? "",
           surname: text(data.surname) ?? "",
         };
+        clearStaffSession();
         writeAdminSession(session);
         return { kind: "success", staff: profileFromAdminSession(session) };
       } catch (error) {
@@ -738,30 +957,85 @@ export const realApi: ApiClient = {
     },
   },
 
+  // No backend endpoints for passwords yet. Worded for the staff member, who
+  // can do something about it, rather than for a developer.
   password: {
     async requestReset() {
-      return pending();
+      return { kind: "error", message: PASSWORDS_UNAVAILABLE };
     },
     async reset() {
-      return pending();
+      return { kind: "error", message: PASSWORDS_UNAVAILABLE };
     },
     async change() {
-      return pending();
+      return { kind: "error", message: PASSWORDS_UNAVAILABLE };
     },
   },
 
   attendance: {
-    async resolveToken() {
-      return pending();
+    // GET /api/attendance/scan/?t= - public, records nothing.
+    async resolveToken(token) {
+      try {
+        const response = await client.get("/api/attendance/scan/", { params: { t: token } });
+        const data = payloadOf(response.data);
+        return {
+          kind: "resolved",
+          office: {
+            id: text(data.id) ?? "",
+            name: text(data.name) ?? "",
+            state: text(data.location) ?? "",
+            // The scan endpoint does not say. An inactive office is refused at
+            // check time and lands on office_inactive there.
+            isActive: true,
+          },
+        };
+      } catch (error) {
+        if (isOffline(error)) return { kind: "offline" };
+        const status = statusOf(error);
+        if (status === 429) {
+          return { kind: "rate_limited", retryAfterSeconds: retryAfterOf(error) };
+        }
+        // Confirmed: 404 "Unknown or expired QR token."
+        if (status === 404 || status === 400) return { kind: "invalid_token" };
+        return { kind: "error", message: messageOf(error) ?? FALLBACK_MESSAGE };
+      }
     },
-    async submit() {
-      return pending();
+
+    // POST /api/attendance/check/ - staff JWT, geofence enforced. The first
+    // punch of the Lagos day is Sign In, the second Sign Out.
+    async submit({ token, deviceId, coordinates }) {
+      const staffId = readStaffSession()?.profile.staffId ?? null;
+      try {
+        const response = await client.post("/api/attendance/check/", {
+          payload_token: token,
+          device_id: deviceId,
+          lat: coordinate(coordinates.latitude),
+          lng: coordinate(coordinates.longitude),
+        });
+        const day = attendanceDayOf(payloadOf(response.data));
+        keepDay(day);
+        return day.signOutAt ? { kind: "signed_out", day } : { kind: "signed_in", day };
+      } catch (error) {
+        return checkFailureOf(error, staffId);
+      }
     },
+
+    // No backend endpoint yet. PROVISIONAL: today's record, if this browser
+    // received one.
     async today() {
-      return pending();
+      const staffId = readStaffSession()?.profile.staffId;
+      return { kind: "success", date: lagosToday(), day: staffId ? keptToday(staffId) : null };
     },
-    async history() {
-      return pending();
+
+    // No backend endpoint yet. PROVISIONAL: the records this browser received
+    // in the period. No statistics - those are the server's to calculate.
+    async history({ period }) {
+      const staffId = readStaffSession()?.profile.staffId;
+      const today = lagosToday();
+      const from = periodStart(period, today);
+      const days = (staffId ? readDays(staffId) : []).filter(
+        (day) => day.date >= from && day.date <= today,
+      );
+      return { kind: "success", days, statistics: null };
     },
   },
 };
