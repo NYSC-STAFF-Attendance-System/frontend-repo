@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BrandLockup } from "@/components/brand";
 import { Screen } from "@/components/screen";
 import { assertNever } from "@/lib/utils";
 import { StepConfirm } from "./step-confirm";
@@ -22,6 +23,7 @@ export default function RegisterPage() {
 
   return (
     <Screen>
+      <BrandLockup align="start" className="mb-8" />
       <header className="mb-8">
         <p className="text-sm font-medium text-primary">Step {stepNumber} of 3</p>
         <h1 className="mt-1 text-2xl font-semibold text-foreground">{title}</h1>

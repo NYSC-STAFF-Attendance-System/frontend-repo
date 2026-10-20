@@ -43,7 +43,7 @@ export default function ProfilePage() {
             ? `This phone has been your attendance device since ${formatDayLabel(
                 staff.deviceBoundAt.slice(0, 10),
               )}.`
-            : "No phone is registered to this account yet."}
+            : "This is your registered attendance device."}
         </p>
         <p className="text-sm text-muted-foreground">
           Attendance only records from this phone. You cannot move it yourself.
@@ -79,7 +79,9 @@ export default function ProfilePage() {
   );
 }
 
+/** Hidden when empty - the live backend does not send every field yet. */
 function Row({ label, value }: { label: string; value: string }) {
+  if (!value) return null;
   return (
     <div className="flex items-start justify-between gap-4 px-3 py-2.5">
       <dt className="shrink-0 text-muted-foreground">{label}</dt>

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { BrandLockup } from "@/components/brand";
 import { Screen } from "@/components/screen";
 import { LoadingState } from "@/components/states";
 import { VerifyEmailView } from "./verify-email-view";
@@ -19,6 +20,7 @@ import { VerifyEmailView } from "./verify-email-view";
 export default function VerifyEmailPage() {
   return (
     <Screen>
+      <BrandLockup align="start" className="mb-8" />
       <Suspense fallback={<LoadingState label="Loading" />}>
         <VerifyEmailView />
       </Suspense>

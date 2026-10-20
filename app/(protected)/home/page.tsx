@@ -19,10 +19,13 @@ export default function HomePage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Hello, {firstName}
         </h1>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MapPin aria-hidden="true" className="size-3.5" />
-          {staff.office.name}
-        </p>
+        {/* Empty until the first scan on the live backend - login does not say. */}
+        {staff.office.name ? (
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin aria-hidden="true" className="size-3.5" />
+            {staff.office.name}
+          </p>
+        ) : null}
       </header>
 
       {state.name === "loading" ? <LoadingState label="Loading today" /> : null}

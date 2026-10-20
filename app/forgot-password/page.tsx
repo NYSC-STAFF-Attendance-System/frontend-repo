@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useForgotPassword } from "./use-forgot-password";
+import { BrandLockup } from "@/components/brand";
 import { Field } from "@/components/field";
 import { Screen } from "@/components/screen";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <Screen>
+        <BrandLockup align="start" className="mb-8" />
         <h1 className="text-2xl font-semibold text-foreground">Check your email</h1>
         {/* Worded so it is true whether or not the address exists. Confirming
             which addresses are registered would turn this form into a way to
@@ -37,6 +39,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <Screen>
+      <BrandLockup align="start" className="mb-8" />
       <header className="mb-8">
         <h1 className="text-2xl font-semibold text-foreground">Reset your password</h1>
         <p className="mt-1 text-sm text-muted-foreground">
