@@ -13,7 +13,7 @@ import type {
 type State =
   | { name: "loading" }
   | { name: "error"; message: string }
-  | { name: "ready"; days: AttendanceDay[]; statistics: AttendanceStatistics };
+  | { name: "ready"; days: AttendanceDay[]; statistics: AttendanceStatistics | null };
 
 export const HISTORY_PERIODS: { value: Exclude<HistoryPeriod, "custom">; label: string }[] = [
   { value: "today", label: "Today" },

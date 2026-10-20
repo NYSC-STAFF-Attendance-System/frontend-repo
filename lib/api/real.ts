@@ -8,6 +8,7 @@ import type {
   AdminStaffMember,
   AttendanceDay,
   AttendanceOutcome,
+  HistoryPeriod,
   LoginResult,
   OfficeQrStation,
   StaffProfile,
@@ -23,9 +24,9 @@ import {
 } from "./admin-session";
 import {
   clearStaffSession,
-  readLastDay,
+  readDays,
   readStaffSession,
-  writeLastDay,
+  rememberDay,
   writeStaffSession,
 } from "./staff-session";
 import type { ApiClient } from "./types";
@@ -440,26 +441,21 @@ async function messageFromMaybeBlob(error: unknown): Promise<string | null> {
 }
 
 /**
- * Shown where the profile has a field the backend does not send yet. Staff
- * login returns only the ID, email and name, and there is no profile endpoint
- * to fill in the rest.
- */
-const NOT_PROVIDED = "Not available";
-
-/**
- * StaffProfile from the login response. PROVISIONAL: rank, department and
- * office are placeholders until the backend returns them. Status, role and
- * verification are known from the login succeeding at all - the backend
- * refuses banned and unverified accounts there.
+ * StaffProfile from the login response. PROVISIONAL: login returns only the
+ * ID, email and name, and there is no profile endpoint, so rank, department
+ * and office are empty - screens hide an empty field. The office is filled in
+ * by the first scan (see rememberDay). Status, role and verification are known
+ * from the login succeeding at all - the backend refuses banned and unverified
+ * accounts there.
  */
 function staffProfileOf(data: Json): StaffProfile {
   return {
     staffId: text(data.staff_id) ?? "",
     fullName: fullNameOf(data),
     email: text(data.email) ?? "",
-    rank: NOT_PROVIDED,
-    department: { id: "", name: NOT_PROVIDED },
-    office: { id: "", name: NOT_PROVIDED },
+    rank: text(data.rank) ?? "",
+    department: { id: "", name: text(data.department) ?? "" },
+    office: { id: text(data.office_id) ?? "", name: text(data.office_name) ?? "" },
     accountStatus: "active",
     role: "staff",
     emailVerified: true,
@@ -528,15 +524,39 @@ function coordinate(value: number): string {
   return value.toFixed(6);
 }
 
+const PASSWORDS_UNAVAILABLE =
+  "Password changes are not available yet. Ask your office admin if you need help signing in.";
+
+/** Today's record from the ones this browser has kept, or null. */
+function keptToday(staffId: string): AttendanceDay | null {
+  const date = lagosToday();
+  return readDays(staffId).find((day) => day.date === date) ?? null;
+}
+
 /**
- * Remembers a record the backend just returned, and the office it names.
- * Login does not say which office someone belongs to, so the first scan is
- * where the profile learns it.
+ * First day of a /history period, YYYY-MM-DD in Africa/Lagos. Weeks start on
+ * Monday. The period always ends today.
  */
-function rememberDay(day: AttendanceDay): void {
+function periodStart(period: HistoryPeriod, today: string): string {
+  if (period === "this_month") return `${today.slice(0, 8)}01`;
+  if (period === "this_week") {
+    const [year, month, day] = today.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+    return date.toISOString().slice(0, 10);
+  }
+  return today;
+}
+
+/**
+ * Keeps a record the backend just returned, and the office it names. Login
+ * does not say which office someone belongs to, so the first scan is where the
+ * profile learns it.
+ */
+function keepDay(day: AttendanceDay): void {
   const session = readStaffSession();
   if (!session) return;
-  writeLastDay(session.profile.staffId, day);
+  rememberDay(session.profile.staffId, day);
   if (day.officeId && session.profile.office.id !== day.officeId) {
     writeStaffSession({
       ...session,
@@ -568,9 +588,9 @@ function checkFailureOf(error: unknown, staffId: string | null): AttendanceOutco
     return { kind: "outside_geofence" };
   }
   if (/already completed/i.test(message)) {
-    const day = staffId ? readLastDay(staffId) : null;
+    const day = staffId ? keptToday(staffId) : null;
     // The outcome carries the day; without one saved here, say it in words.
-    if (day?.date === lagosToday() && day.signOutAt) return { kind: "already_complete", day };
+    if (day?.signOutAt) return { kind: "already_complete", day };
     return { kind: "error", message };
   }
   if (/office/i.test(message) && /inactive|not active|deactiv|closed/i.test(message)) {
@@ -937,15 +957,17 @@ export const realApi: ApiClient = {
     },
   },
 
+  // No backend endpoints for passwords yet. Worded for the staff member, who
+  // can do something about it, rather than for a developer.
   password: {
     async requestReset() {
-      return pending();
+      return { kind: "error", message: PASSWORDS_UNAVAILABLE };
     },
     async reset() {
-      return pending();
+      return { kind: "error", message: PASSWORDS_UNAVAILABLE };
     },
     async change() {
-      return pending();
+      return { kind: "error", message: PASSWORDS_UNAVAILABLE };
     },
   },
 
@@ -990,23 +1012,30 @@ export const realApi: ApiClient = {
           lng: coordinate(coordinates.longitude),
         });
         const day = attendanceDayOf(payloadOf(response.data));
-        rememberDay(day);
+        keepDay(day);
         return day.signOutAt ? { kind: "signed_out", day } : { kind: "signed_in", day };
       } catch (error) {
         return checkFailureOf(error, staffId);
       }
     },
 
-    // No backend endpoint yet. PROVISIONAL: the last record this browser
-    // received, if it is from today.
+    // No backend endpoint yet. PROVISIONAL: today's record, if this browser
+    // received one.
     async today() {
-      const date = lagosToday();
       const staffId = readStaffSession()?.profile.staffId;
-      const day = staffId ? readLastDay(staffId) : null;
-      return { kind: "success", date, day: day?.date === date ? day : null };
+      return { kind: "success", date: lagosToday(), day: staffId ? keptToday(staffId) : null };
     },
-    async history() {
-      return pending();
+
+    // No backend endpoint yet. PROVISIONAL: the records this browser received
+    // in the period. No statistics - those are the server's to calculate.
+    async history({ period }) {
+      const staffId = readStaffSession()?.profile.staffId;
+      const today = lagosToday();
+      const from = periodStart(period, today);
+      const days = (staffId ? readDays(staffId) : []).filter(
+        (day) => day.date >= from && day.date <= today,
+      );
+      return { kind: "success", days, statistics: null };
     },
   },
 };

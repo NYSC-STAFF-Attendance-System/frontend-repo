@@ -58,33 +58,40 @@ export function clearStaffSession(): void {
   }
 }
 
-const LAST_DAY_KEY = "nysc.staff.last_day";
+const DAYS_KEY = "nysc.staff.days";
+
+/** Enough for the longest /history period, a month, with room to spare. */
+const MAX_DAYS = 62;
 
 /**
- * The last attendance record the backend returned to this browser.
+ * Attendance records the backend has returned to this browser, newest first.
  *
- * PROVISIONAL: there is no "today" endpoint, so /home shows this instead. It
- * is the server's own record, so it is never wrong - but it can be missing,
- * when the person signed in from another browser or cleared site data. Kept
- * apart from the session, and keyed by staff ID, so signing out and back in on
- * the same day still shows the morning's sign-in.
+ * PROVISIONAL: there is no "today" or history endpoint for staff, so /home and
+ * /history show these instead. They are the server's own records, so none is
+ * ever wrong - but days can be missing, when the person signed in from another
+ * browser or cleared site data. Kept apart from the session, and keyed by
+ * staff ID, so signing out and back in keeps them.
  */
-export function readLastDay(staffId: string): AttendanceDay | null {
-  if (typeof window === "undefined") return null;
+export function readDays(staffId: string): AttendanceDay[] {
+  if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(LAST_DAY_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { staffId?: string; day?: AttendanceDay };
-    return parsed.staffId === staffId && parsed.day ? parsed.day : null;
+    const raw = window.localStorage.getItem(DAYS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { staffId?: string; days?: AttendanceDay[] };
+    return parsed.staffId === staffId && Array.isArray(parsed.days) ? parsed.days : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-export function writeLastDay(staffId: string, day: AttendanceDay): void {
+/** Adds a record, replacing the one for the same date - sign out updates sign in. */
+export function rememberDay(staffId: string, day: AttendanceDay): void {
   if (typeof window === "undefined") return;
+  const days = [day, ...readDays(staffId).filter((kept) => kept.date !== day.date)]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, MAX_DAYS);
   try {
-    window.localStorage.setItem(LAST_DAY_KEY, JSON.stringify({ staffId, day }));
+    window.localStorage.setItem(DAYS_KEY, JSON.stringify({ staffId, days }));
   } catch {
     // Blocked site data. /home falls back to "not signed in yet".
   }
